@@ -3,9 +3,9 @@ package kv
 type Key uint64
 type Value [10]byte
 
-type Kv interface {
-	insert(key Key, value Value) error
-	remove(key Key) (Value, error)
-	search(key Key) (Value, error)
-	scan(key1 Key, key2 Key) ([]Value, error)
+type kv interface {
+	Insert(Key, Value) error
+	Remove(Key) (*Value, error)
+	Search(Key) (*Value, error)
+	Scan(Key, Key) ([]*Value, error)
 }
