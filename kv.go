@@ -4,22 +4,37 @@ type Key uint64
 type Value [10]byte
 
 type kv interface {
-	Insert(Key, Value) error
+	Insert(Key, Value, bool) error
 	Remove(Key) (*Value, error)
 	Search(Key) (*Value, error)
 	Min() (*Key, error)
 	Max() (*Key, error)
+	Len() uint64
 	Scan(Key, Key) ([]*Value, error)
 }
 
 type KV struct {
+	size uint64
 }
 
-func (store *KV) Insert(key Key, value Value) error {
+func New() *KV {
+	return &KV{size: 0}
+}
+
+func (store *KV) Len() uint64 {
+	return store.size
+}
+
+func (store *KV) Insert(key Key, value Value, update bool) error {
+
+	if !update {
+		store.size++
+	}
 	return nil
 }
 
 func (store *KV) Remove(key Key) (*Value, error) {
+	store.size--
 	return nil, nil
 
 }
