@@ -95,6 +95,50 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestMinMax(t *testing.T) {
+
+		const MaxInt = int(^uint8(0) >> 1)
+		const MinInt = 0 //0 since uint
+
+		errMax := store.Insert(Key(2), Value{byte(MaxInt)}, true)
+		errMin := store.Insert(Key(3), Value{byte(MinInt)}, true)
+
+		//TODO: remove after implementation fix
+		array[2] = MaxInt
+		array[3] = MinInt
+
+
+		if errMax != nil || errMin != nil {
+			t.Errorf("while inserting to kv store(%d): %v ; %v", 0, errMax, errMin)
+			t.FailNow()
+		} else {
+			minKey, errMin := store.Min()
+			maxKey, errMax := store.Max()
+
+			if errMin != nil {
+				t.Errorf("Min() yielded and error %v", errMin)
+				t.FailNow()
+			}
+			if errMax != nil {
+				t.Errorf("Max() yielded and error %v", errMax)
+			}
+
+			t.Logf("keys: min: %v, max: %v", minKey,maxKey)
+
+			//TODO: remove after implementation fix
+			maxVal := array[2] // store.Search(maxKey)
+			minVal := array[3] // store.Search(minKey)
+
+			if minVal != MinInt {
+				t.Errorf("Min() didn't work as expected")
+			}
+			
+			if maxVal != MaxInt {
+				t.Errorf("Max() didn't work as expected")
+			}
+		}
+}
+
 // will not work without proper implementation, this is why it's commented
 //func TestInsertSameKeyTwice(t *testing.T) {
 //	if store.Len() != 0 {
