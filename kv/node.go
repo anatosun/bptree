@@ -27,7 +27,7 @@ type node struct {
 
 func newNode(degree int) *node {
 
-	return &node{entries: make([]*entry, degree), num: 0, isLeaf: false, degree: degree, parent: nil, children: make([]*node, degree), size: 0, max: degree - 1, min: int(math.Ceil(float64(degree)/2) - 1), left: nil, right: nil, next: nil}
+	return &node{entries: make([]*entry, degree+1), num: 0, isLeaf: false, degree: degree, parent: nil, children: make([]*node, degree+1), size: 0, max: degree - 1, min: int(math.Ceil(float64(degree)/2) - 1), left: nil, right: nil, next: nil}
 }
 
 func (n *node) full() bool {
@@ -98,6 +98,9 @@ func (n *node) appendChild(child *node) error {
 	if n.full() {
 		return fmt.Errorf("node is full")
 	}
+	if child == nil {
+		return fmt.Errorf("child is nil")
+	}
 	n.children[n.size] = child
 	n.size++
 	return nil
@@ -110,7 +113,7 @@ func (n *node) prependChild(child *node) error {
 	temp := make([]*node, n.degree)
 	temp[0] = child
 	n.children = append(temp, n.children...)
-	n.size++
+	n.size--
 	return nil
 }
 
@@ -124,6 +127,7 @@ func (n *node) removeChildAt(at int) error {
 	}
 
 	n.children[at] = nil
+	n.size--
 	return nil
 }
 
@@ -132,21 +136,28 @@ func (n *node) removeChild(child *node) error {
 	if at, err := n.findIndexOfChild(child); err != nil {
 		return err
 	} else {
+		n.size--
 		return n.removeChildAt(at)
 	}
 
 }
 
 func (n *node) findLeaf(key Key) (*node, error) {
-	at, err := n.findIndexOfKey(key)
-	if err != nil {
-		return nil, err
+	at := 0
+
+	for at < (n.size - 1) {
+		at++
+		if key < n.entries[at].key {
+			break
+		}
 	}
+
 	child := n.children[at]
 	if child.isLeaf {
+
 		return child, nil
 	} else {
-		return child.parent.findLeaf(key)
+		return child.findLeaf(key)
 	}
 }
 
