@@ -5,11 +5,6 @@ import (
 	"math"
 )
 
-type entry struct {
-	key   Key
-	value Value
-}
-
 type node struct {
 	entries  []*entry
 	num      int
@@ -27,15 +22,19 @@ type node struct {
 
 func newNode(degree int) *node {
 
-	return &node{entries: make([]*entry, degree+1), num: 0, isLeaf: false, degree: degree, parent: nil, children: make([]*node, degree+1), size: 0, max: degree - 1, min: int(math.Ceil(float64(degree)/2) - 1), left: nil, right: nil, next: nil}
+	return &node{entries: make([]*entry, 0, degree), num: 0, isLeaf: false, degree: degree, parent: nil, children: make([]*node, 0, degree), size: 0, max: degree - 1, min: int(math.Ceil(float64(degree)/2) - 1), left: nil, right: nil, next: nil}
 }
 
 func (n *node) full() bool {
 	if n.isLeaf {
-		return n.num == n.degree+1
+		return n.num == n.max
 	} else {
-		return n.size == n.degree+1
+		return n.size == n.max
 	}
+}
+
+func (n *node) overfull() bool {
+	return n.size == n.max+1
 }
 
 func (n *node) empty() bool {
@@ -71,7 +70,7 @@ func (n *node) mergeable() bool {
 	}
 }
 
-func (n *node) insertChild(child *node, at int) error {
+func (n *node) insertChildAt(child *node, at int) error {
 
 	if n.full() {
 		return fmt.Errorf("node is full")
@@ -101,7 +100,7 @@ func (n *node) appendChild(child *node) error {
 	if child == nil {
 		return fmt.Errorf("child is nil")
 	}
-	n.children[n.size] = child
+	n.children = append(n.children, child)
 	n.size++
 	return nil
 }
@@ -110,10 +109,9 @@ func (n *node) prependChild(child *node) error {
 	if n.full() {
 		return fmt.Errorf("node is full")
 	}
-	temp := make([]*node, n.degree)
-	temp[0] = child
-	n.children = append(temp, n.children...)
-	n.size--
+
+	n.children = append([]*node{child}, n.children...)
+	n.size++
 	return nil
 }
 
@@ -126,7 +124,7 @@ func (n *node) removeChildAt(at int) error {
 		return fmt.Errorf("index of deletion is out of range")
 	}
 
-	n.children[at] = nil
+	n.children = append(n.children[:at], n.children[at+1:]...)
 	n.size--
 	return nil
 }
@@ -136,7 +134,6 @@ func (n *node) removeChild(child *node) error {
 	if at, err := n.findIndexOfChild(child); err != nil {
 		return err
 	} else {
-		n.size--
 		return n.removeChildAt(at)
 	}
 
@@ -145,16 +142,15 @@ func (n *node) removeChild(child *node) error {
 func (n *node) findLeaf(key Key) (*node, error) {
 	at := 0
 
-	for at < (n.size - 1) {
-		at++
-		if key < n.entries[at].key {
+	for i, e := range n.entries {
+		at = i
+		if key < e.key {
 			break
 		}
 	}
 
 	child := n.children[at]
 	if child.isLeaf {
-
 		return child, nil
 	} else {
 		return child.findLeaf(key)
@@ -163,13 +159,8 @@ func (n *node) findLeaf(key Key) (*node, error) {
 
 func (n *node) splitChildren(split int) []*node {
 
-	children := n.children
-	halfChildren := make([]*node, n.degree+1)
-
-	for i := split + 1; i < n.size; i++ {
-		halfChildren[i-split-1] = children[i]
-		n.removeChildAt(i)
-	}
+	halfChildren := n.children[split:]
+	n.children = n.children[:split]
 
 	return halfChildren
 }
@@ -185,9 +176,19 @@ func (n *node) nextChildAt() (int, error) {
 }
 
 func (n *node) shiftChildrenDown(amount int) []*node {
-	children := make([]*node, n.degree+1)
+	children := make([]*node, n.degree)
 	for i := amount; i < n.size; i++ {
 		children[i-amount] = n.children[i]
 	}
 	return children
+}
+
+func (n *node) print() {
+
+	fmt.Printf("[ ")
+	for _, e := range n.entries {
+		fmt.Printf("%d ", e.key)
+	}
+	fmt.Printf("]")
+
 }

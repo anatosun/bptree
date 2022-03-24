@@ -33,7 +33,7 @@ func (b *Bplustree) splitNode(n *node) error {
 
 	// if the node is root
 	if parent == nil {
-		entries := make([]*entry, b.degree)
+		entries := make([]*entry, 0, b.degree)
 		entries[0] = medianEntry
 		newRoot := newNode(b.degree)
 		newRoot.entries = entries
@@ -50,7 +50,7 @@ func (b *Bplustree) splitNode(n *node) error {
 			return err
 		}
 		childAt++
-		parent.insertChild(sibling, childAt)
+		parent.insertChildAt(sibling, childAt)
 		sibling.parent = parent
 	}
 

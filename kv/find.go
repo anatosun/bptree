@@ -3,9 +3,9 @@ package kv
 func (b *Bplustree) findLeaf(key Key) (*node, error) {
 
 	at := 0
-	for at < (b.root.num - 1) {
-		at++
-		if key < b.root.entries[at].key {
+	for i, e := range b.root.entries {
+		at = i
+		if key < e.key {
 			break
 		}
 	}

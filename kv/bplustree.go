@@ -2,7 +2,6 @@ package kv
 
 import (
 	"fmt"
-	"log"
 )
 
 type Bplustree struct {
@@ -26,11 +25,11 @@ func (b *Bplustree) Empty() bool {
 
 func (b *Bplustree) Insert(key Key, value Value) error {
 
-	log.Printf("inserting key %d", key)
-
+	// log.Printf("inserting key %d", key)
+	e := &entry{key, value}
 	if b.Empty() {
 		b.leaf = newLeaf(b.degree)
-		err := b.leaf.insertEntry(&entry{key, value})
+		err := b.leaf.insertEntry(e)
 		if err != nil {
 			return err
 		}
@@ -44,25 +43,23 @@ func (b *Bplustree) Insert(key Key, value Value) error {
 	} else {
 		leaf, err = b.findLeaf(key)
 		if err != nil {
-			log.Fatalln(err)
 			return err
 		}
 	}
-	e := &entry{key, value}
+
 	err = leaf.insertEntry(e)
 	// if the insertion failed that means it was full
 	if err != nil {
 		err = leaf.stuffEntry(e)
 		if err != nil {
-			log.Fatalln(err)
 			return err
 		}
 		mid := leaf.median()
 		halfEntries := leaf.splitEntries(mid)
 
 		if leaf.parent == nil {
-			entries := make([]*entry, leaf.degree+1)
-			entries[0] = halfEntries[0]
+			entries := make([]*entry, 0, b.degree)
+			entries = append(entries, halfEntries[0])
 			parent := newNode(b.degree)
 			parent.entries = entries
 			leaf.parent = parent
@@ -73,13 +70,13 @@ func (b *Bplustree) Insert(key Key, value Value) error {
 		}
 
 		lf := newLeaf(b.degree)
+		lf.parent = leaf.parent
 		index, err := leaf.parent.findIndexOfChild(leaf)
 		index++
 		if err != nil {
-			log.Fatalln(err)
 			return err
 		}
-		leaf.parent.insertChild(lf, index)
+		leaf.parent.insertChildAt(lf, index)
 		lf.right = leaf.right
 		if lf.right != nil {
 			lf.right.left = lf
@@ -93,7 +90,7 @@ func (b *Bplustree) Insert(key Key, value Value) error {
 			node := leaf.parent
 
 			for node != nil {
-				if node.full() {
+				if node.overfull() {
 					b.splitNode(node)
 				} else {
 					break
@@ -125,16 +122,15 @@ func (b *Bplustree) Search(key Key) (*Value, error) {
 	} else {
 		leaf, err = b.findLeaf(key)
 		if err != nil {
-			log.Fatalln(err)
 			return nil, err
 		}
 	}
 
 	entry := leaf.binarySearch(key)
-
+	fmt.Println(key)
+	printEntries(leaf.entries)
 	if entry == nil {
 		err = fmt.Errorf("could not find key in leaf")
-		log.Fatalln(err)
 		return nil, err
 	}
 
@@ -152,5 +148,16 @@ func (b *Bplustree) Max() (*Key, error) {
 
 func (b *Bplustree) Scan(key1, key2 Key) ([]*Value, error) {
 	return nil, nil
+
+}
+
+func (b *Bplustree) Print() {
+	child := b.leaf
+	for child != nil {
+		for _, e := range child.children {
+			e.print()
+		}
+		child = child.right
+	}
 
 }
