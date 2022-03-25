@@ -101,3 +101,20 @@ func (n *node) scan(leaf *node, at int, fn func(key Key) bool) ([]*Value, error)
 	return values, nil
 
 }
+
+func (left *node) splitLeaf(middle, right *node, at int) error {
+
+	middle.next = left.next
+	middle.prev = left
+	left.next = middle
+
+	middle.entries = make([]*entry, 0, left.degree-1)
+	middle.entries = append(middle.entries, left.entries[left.degree:]...)
+	left.entries = left.entries[:left.degree]
+
+	right.insertChildAt(at+1, middle)
+	right.insertEntryAt(at, middle.entries[0])
+
+	return nil
+
+}

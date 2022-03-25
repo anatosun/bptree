@@ -64,34 +64,13 @@ func (b *Bplustree) path(n *node, e *entry) error {
 	return b.place(child, e)
 }
 
-func (b *Bplustree) split(left, middle, right *node, i int) error {
+func (b *Bplustree) split(left, middle, right *node, at int) error {
+
 	if left.isLeaf() {
-		middle.next = left.next
-		middle.prev = left
-		left.next = middle
 
-		middle.entries = make([]*entry, 0, b.degree-1)
-		middle.entries = append(middle.entries, left.entries[b.degree:]...)
-		left.entries = left.entries[:b.degree]
-
-		right.insertChildAt(i+1, middle)
-		right.insertEntryAt(i, middle.entries[0])
-
-	} else {
-
-		parentKey := left.entries[b.degree-1]
-		middle.entries = make([]*entry, 0, b.degree-1)
-		middle.entries = append(middle.entries, left.entries[:b.degree]...)
-		left.entries = left.entries[b.degree:]
-
-		middle.children = make([]*node, 0, b.degree)
-		middle.children = append(middle.children, left.children[:b.degree]...)
-		left.children = left.children[b.degree:]
-
-		right.insertChildAt(i, middle)
-		right.insertEntryAt(i, parentKey)
+		return left.splitLeaf(middle, right, at)
 
 	}
 
-	return nil
+	return left.splitNode(middle, right, at)
 }
