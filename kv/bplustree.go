@@ -20,7 +20,7 @@ func (b *Bplustree) Insert(key Key, value Value) error {
 
 	if b.root == nil {
 		b.root = newNode(b.degree)
-		b.root.appendEntry(e)
+		b.root.insertEntryAt(0, e)
 	}
 
 	if b.root.full() {
