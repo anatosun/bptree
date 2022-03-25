@@ -15,7 +15,7 @@ func TestInit(t *testing.T) {
 	array = make([]int, 0, size)
 
 	for i := 0; i < size; i++ {
-		array = append(array, rand.Int())
+		array = append(array, i)
 	}
 
 	if store.Len() != 0 {
@@ -52,7 +52,7 @@ func TestRemove(t *testing.T) {
 	}
 
 	for i := 0; i < len(array); i++ {
-		err, _ := store.Remove(Key(array[i]))
+		_, err := store.Remove(Key(array[i]))
 		if err != nil {
 			t.Errorf("while removing %d: %v", array[i], err)
 			t.FailNow()
