@@ -39,9 +39,7 @@ func (n *node) recursive(key Key) (*node, int, error) {
 }
 
 func (n *node) full() bool {
-	if n.isLeaf() {
-		return len(n.entries) == ((2 * n.degree) - 1)
-	}
+
 	return len(n.entries) == ((2 * n.degree) - 1)
 
 }
