@@ -8,17 +8,6 @@ func (n *node) isLeaf() bool {
 	return len(n.children) == 0
 }
 
-// func (n *node) insertEntry(e *entry) error {
-
-// 	for i, entry := range n.entries {
-// 		if entry.key > e.key {
-// 			return n.insertEntryAt(i, e)
-// 		}
-// 	}
-
-// 	return n.appendEntry(e)
-// }
-
 func (n *node) insertEntryAt(at int, e *entry) error {
 	n.entries = append(n.entries[0:at], append([]*entry{e}, n.entries[at:]...)...)
 	return nil
@@ -61,11 +50,6 @@ func (n *node) search(key Key) (int, bool) {
 	}
 
 	return lower, false
-}
-
-func (n *node) appendEntry(e *entry) error {
-	n.entries = append(n.entries, e)
-	return nil
 }
 
 func (n *node) scan(leaf *node, at int, fn func(key Key) bool) ([]*Value, error) {
