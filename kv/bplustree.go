@@ -2,135 +2,39 @@ package kv
 
 import (
 	"fmt"
+	"math"
 )
 
 type Bplustree struct {
-	size   int
 	degree int
-	leaf   *node
 	root   *node
 }
 
 func New(degree int) *Bplustree {
-	return &Bplustree{size: 0, degree: degree, root: nil}
-}
-
-func (b *Bplustree) Len() int {
-	return b.size
-}
-
-func (b *Bplustree) Empty() bool {
-	return b.size == 0
+	return &Bplustree{degree: degree, root: nil}
 }
 
 func (b *Bplustree) Insert(key Key, value Value) error {
-
-	// log.Printf("inserting key %d", key)
-	e := &entry{key, value}
-	if b.Empty() {
-		b.leaf = newLeaf(b.degree)
-		err := b.leaf.insertEntry(e)
-		if err != nil {
-			return err
-		}
-		b.size++
-		return nil
-	}
-	var leaf *node
-	var err error
-	if b.root == nil {
-		leaf = b.leaf
-	} else {
-		leaf, err = b.findLeaf(key)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = leaf.insertEntry(e)
-	// if the insertion failed that means it was full
-	if err != nil {
-		err = leaf.stuffEntry(e)
-		if err != nil {
-			return err
-		}
-		mid := leaf.median()
-		halfEntries := leaf.splitEntries(mid)
-
-		if leaf.parent == nil {
-			entries := make([]*entry, 0, b.degree)
-			entries = append(entries, halfEntries[0])
-			parent := newNode(b.degree)
-			parent.entries = entries
-			leaf.parent = parent
-			parent.appendChild(leaf)
-		} else {
-			p := halfEntries[0]
-			leaf.parent.insertEntry(p)
-		}
-
-		lf := newLeaf(b.degree)
-		lf.parent = leaf.parent
-		index, err := leaf.parent.findIndexOfChild(leaf)
-		index++
-		if err != nil {
-			return err
-		}
-		leaf.parent.insertChildAt(lf, index)
-		lf.right = leaf.right
-		if lf.right != nil {
-			lf.right.left = lf
-		}
-		leaf.right = lf
-		lf.left = leaf
-
-		if b.root == nil {
-			b.root = leaf.parent
-		} else {
-			node := leaf.parent
-
-			for node != nil {
-				if node.overfull() {
-					b.splitNode(node)
-				} else {
-					break
-				}
-				node = node.parent
-			}
-		}
-	}
-	return nil
-
+	// log.Printf("inserting %d\n", key)
+	entry := &entry{key, value}
+	return b.insert(entry)
 }
 
 func (b *Bplustree) Remove(key Key) (*Value, error) {
-	b.size--
-	return nil, nil
 
-}
+	leaf, at, err := b.root.recursive(key)
 
-func (b *Bplustree) Search(key Key) (*Value, error) {
-
-	if b.Empty() {
-		return nil, fmt.Errorf("tree is empty")
+	if err != nil {
+		return nil, err
 	}
 
-	var err error
-	var leaf *node
-	if b.root == nil {
-		leaf = b.leaf
-	} else {
-		leaf, err = b.findLeaf(key)
-		if err != nil {
-			return nil, err
-		}
+	if at > len(leaf.entries)-1 {
+		return nil, fmt.Errorf("index out of range %d:%d", at, len(leaf.entries))
 	}
 
-	entry := leaf.binarySearch(key)
-	fmt.Println(key)
-	printEntries(leaf.entries)
-	if entry == nil {
-		err = fmt.Errorf("could not find key in leaf")
+	entry, err := leaf.removeEntryAt(at)
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -138,26 +42,92 @@ func (b *Bplustree) Search(key Key) (*Value, error) {
 
 }
 
-func (b *Bplustree) Min() (*Key, error) {
-	return nil, nil
-}
+func (b *Bplustree) Search(key Key) (*Value, error) {
 
-func (b *Bplustree) Max() (*Key, error) {
-	return nil, nil
-}
-
-func (b *Bplustree) Scan(key1, key2 Key) ([]*Value, error) {
-	return nil, nil
-
-}
-
-func (b *Bplustree) Print() {
-	child := b.leaf
-	for child != nil {
-		for _, e := range child.children {
-			e.print()
-		}
-		child = child.right
+	if len(b.root.entries) == 0 {
+		return nil, fmt.Errorf("key not found")
 	}
 
+	leaf, at, err := b.root.recursive(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return &leaf.entries[at].value, nil
+
+}
+
+func (b *Bplustree) Empty() bool {
+
+	return b.root.empty()
+}
+
+func (b *Bplustree) Min() (Key, error) {
+	// we use uint64 so the min is 0, consider that if you change the type of key
+	if b.Empty() {
+		return 0, fmt.Errorf("tree is empty")
+	}
+	leaf, _, _ := b.root.recursive(0)
+
+	if len(leaf.entries) == 0 {
+		return 0, nil
+	}
+
+	return leaf.entries[0].key, nil
+}
+
+func (b *Bplustree) Max() (Key, error) {
+	if b.Empty() {
+		return math.MaxUint64, fmt.Errorf("tree is empty")
+	}
+	leaf, _, _ := b.root.recursive(math.MaxUint64)
+
+	if len(leaf.entries) == 0 {
+		return math.MaxUint64, nil
+	}
+	return leaf.entries[len(leaf.entries)-1].key, nil
+}
+
+func (b *Bplustree) Range(key1, key2 Key) ([]*Value, error) {
+
+	return b.Scan(key1, func(key Key) bool {
+		if key == key2 {
+			return true
+		} else {
+			return false
+		}
+	})
+
+}
+
+func (b *Bplustree) Scan(start Key, fn func(key Key) bool) ([]*Value, error) {
+
+	leaf, at, err := b.root.recursive(start)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return leaf.scan(leaf, at, fn)
+
+}
+
+func (b *Bplustree) Len() int {
+
+	min, err := b.Min()
+	if err != nil {
+		return 0
+	}
+
+	max, err := b.Max()
+	if err != nil {
+		return 0
+	}
+
+	values, err := b.Range(min, max)
+	if err != nil {
+		return -1
+	}
+
+	return len(values)
 }
