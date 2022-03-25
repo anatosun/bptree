@@ -73,6 +73,7 @@ func (n *node) scan(leaf *node, at int, fn func(key Key) bool) ([]*Value, error)
 	values := make([]*Value, 0, INITIAL_SIZE)
 
 	for leaf != nil && at > len(leaf.entries)-1 {
+		at = 0
 		leaf = leaf.next
 	}
 
