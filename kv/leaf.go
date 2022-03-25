@@ -102,6 +102,7 @@ func (n *node) scan(leaf *node, at int, fn func(key Key) bool) ([]*Value, error)
 
 }
 
+// dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
 func (left *node) splitLeaf(middle, right *node, at int) error {
 
 	middle.next = left.next

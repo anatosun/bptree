@@ -58,6 +58,7 @@ func (n *node) empty() bool {
 
 }
 
+// dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
 func (left *node) splitNode(middle, right *node, at int) error {
 
 	parentKey := left.entries[left.degree-1]
