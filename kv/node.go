@@ -77,3 +77,55 @@ func (left *node) splitNode(middle, right *node, at int) error {
 	return nil
 
 }
+
+func (n *node) place(e *entry) error {
+
+	if n.isLeaf() {
+		at, found := n.search(e.key)
+
+		if found {
+			return n.update(at, e.value)
+
+		}
+
+		return n.insertEntryAt(at, e)
+	}
+
+	return n.path(e)
+}
+
+func (n *node) path(e *entry) error {
+	at, found := n.search(e.key)
+
+	if found {
+		at++
+	}
+
+	child := n.children[at]
+
+	if child.full() {
+		sib := newNode(n.degree)
+
+		if err := child.split(sib, n, at); err != nil {
+			return err
+		}
+
+		if e.key >= n.entries[at].key {
+			child = n.children[at+1]
+
+		}
+	}
+
+	return child.place(e)
+}
+
+func (left *node) split(middle, right *node, at int) error {
+
+	if left.isLeaf() {
+
+		return left.splitLeaf(middle, right, at)
+
+	}
+
+	return left.splitNode(middle, right, at)
+}

@@ -16,8 +16,28 @@ func New(degree int) *Bplustree {
 
 func (b *Bplustree) Insert(key Key, value Value) error {
 	// log.Printf("inserting %d\n", key)
-	entry := &entry{key, value}
-	return b.insert(entry)
+	e := &entry{key, value}
+
+	if b.root == nil {
+		b.root = newNode(b.degree)
+		b.root.appendEntry(e)
+	}
+
+	if b.root.full() {
+
+		root := newNode(b.degree)
+		right := newNode(b.degree)
+		old := b.root
+		root.children = append(root.children, old)
+		b.root = root
+
+		if err := old.split(right, root, 0); err != nil {
+			return err
+		}
+
+	}
+
+	return b.root.place(e)
 }
 
 func (b *Bplustree) Remove(key Key) (*Value, error) {
