@@ -1,6 +1,7 @@
 package bm
 
 import (
+    "errors"
     "fmt"
     "math"
 )
@@ -28,7 +29,7 @@ func (ring *Ring) Insert(key interface{}, val interface{}) error {
         ring.size++
         return nil
     } else {
-        panic(fmt.Errorf("ring.go: Ring capacity has been reached, cannot insert."))
+        return errors.New("ring.go: Ring capacity has been reached, cannot insert.")
     }
 }
 
@@ -59,7 +60,7 @@ func (ring *Ring) Prev() RingNode {
         if ring.pointer > 0 {
             ring.pointer--
         } else {
-            fmt.Errorf("ring.go: This shouldn't happen...")
+            panic(fmt.Errorf("ring.go: This shouldn't happen, abort..."))
         }
     }
 

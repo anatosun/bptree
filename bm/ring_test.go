@@ -48,23 +48,6 @@ func TestRingOperations(t *testing.T) {
     AssertEqual(t, ring.HasKey(10), true)
     AssertEqual(t, ring.IsFull(), true)
 
-    // ring.Print()
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-    // fmt.Printf("pointer=%d\n", ring.pointer)
-    // ring.Remove(10)
-    // fmt.Printf("pointer=%d\n", ring.pointer)
-    // fmt.Println(ring.Next())
-    // fmt.Println(ring.Next())
-
 }
 
 //https://gist.github.com/samalba/6059502
@@ -73,6 +56,5 @@ func AssertEqual(t *testing.T, a interface{}, b interface{}) {
     if a == b {
         return
     }
-    // debug.PrintStack()
     t.Errorf("Received %v (type %v), expected %v (type %v)", a, reflect.TypeOf(a), b, reflect.TypeOf(b))
 }
