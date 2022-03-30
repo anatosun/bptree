@@ -1,5 +1,10 @@
 package bm
 
+import (
+	"reflect"
+	"testing"
+)
+
 // For testing purposes
 
 //https://gist.github.com/samalba/6059502
