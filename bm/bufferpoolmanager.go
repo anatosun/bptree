@@ -1,7 +1,8 @@
 package bm
 
 import (
-//	"fmt"
+	"errors"
+	"fmt"
 )
 
 const BufferPoolCapacity = 4
@@ -25,7 +26,7 @@ func NewBufferPoolManager(DiskManager DiskManager, clock *ClockPolicy) *BufferPo
 }
 
 func (bpm *BufferPoolManager) GetNewPage() *Page {
-	frameID, isFromFreeList := bpm.getFrameID()
+	frameID, isFromFreeList := bpm.GetFrameID()
 	if frameID == nil {
 		return nil
 	}
@@ -36,6 +37,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 		if page.IsDirty() {
 			// save to disk
 			bpm.diskManager.WritePage(page)
+			page.dirty = false
 		}
 
 		//remove page from frame
@@ -57,7 +59,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 	return page
 }
 
-func (bpm *BufferPoolManager) getFrameID() (*int, bool) {
+func (bpm *BufferPoolManager) GetFrameID() (*int, bool) {
 	if len(bpm.freeList) > 0 {
 		frameID := bpm.freeList[0]
 		bpm.freeList = bpm.freeList[1:]
@@ -67,12 +69,16 @@ func (bpm *BufferPoolManager) getFrameID() (*int, bool) {
 	return (*bpm.replacer).Victim(), false
 }
 
-func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) {
+func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 	// Unpin page by decreasing counter.
 	// If counter == 0 => put into replacer for eviction
 	// If isDirty is true, then set dirtybit to true
 
-	frameID := bpm.pageTable[pageID]
+	frameID, found := bpm.pageTable[pageID]
+
+	if !found {
+		return errors.New("Page doesn't exist")
+	}
 	page := bpm.pages[frameID]
 	page.decreasePinCounter()
 
@@ -84,6 +90,7 @@ func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) {
 		page.dirty = true
 	}
 
+	return nil
 }
 
 func (bpm *BufferPoolManager) PrintPages() {
@@ -92,16 +99,96 @@ func (bpm *BufferPoolManager) PrintPages() {
 	}
 }
 
-// func FetchPage(pageID PageID) *Page {
-// 	// Fetch page with given pageID,
-// 	// return Page
-// }
+func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
+	// Fetch page with given pageID,
 
-// func FlushPage(pageID PageID) bool {
-// 	// Check if dirtybit is set to 1, if yes, write to diskmanager (mocked)
-// 	// Else, just flush
-// }
+	//check first if page is in buffer pool, if yes, return
+	frameID, found := bpm.pageTable[pageID]
 
-// func FlushAllPages(){
-// 	// Flush all pages
-// }
+	if found {
+		page := bpm.pages[frameID]
+		page.increasePinCounter()
+
+		(*bpm.replacer).Pin(frameID) // remove page from clock
+		return page
+
+		fmt.Printf("pageID=%d,frameID=%d exists in buffer pool\n", pageID, frameID)
+	} else {
+		// Page doesn't exist in buffer pool,
+		// time to load it
+
+		fmt.Printf("pageID=%d doesn't exists in buffer pool\n", pageID)
+	}
+
+	// first get a free frameID
+	freeFrameID, isFromFreeList := bpm.GetFrameID()
+
+	// Victimized, i.e. not from free list
+	if !isFromFreeList {
+		page := bpm.pages[*freeFrameID]
+		if page.IsDirty() {
+			// save to disk
+			bpm.diskManager.WritePage(page)
+			page.dirty = false
+		}
+
+		//remove page from frame
+		delete(bpm.pageTable, page.id)
+
+		//fmt.Println("Page not from free list")
+	} else {
+		//fmt.Println("Page from free list")
+
+	}
+
+	page, err := bpm.diskManager.ReadPage(pageID)
+	if err != nil {
+		return nil
+	}
+
+	(*page).setPinCounter(1)
+	bpm.pageTable[pageID] = *freeFrameID
+	bpm.pages[*freeFrameID] = page
+
+	return page
+}
+
+func (bpm *BufferPoolManager) DeletePage(pageID int) error {
+
+	frameID, found := bpm.pageTable[pageID]
+
+	if !found {
+		return errors.New("Page doesn't exist")
+	}
+
+	page := bpm.pages[frameID]
+
+	if !page.hasZeroPins() {
+		return errors.New("Page is still in use, cannot be deleted")
+	}
+
+	delete(bpm.pageTable, page.id)
+	bpm.diskManager.DeallocatePage(pageID)
+	bpm.freeList = append(bpm.freeList, frameID)
+
+	// Note: The page will still stay inside of the pageTable until it has been replaced
+
+	return nil
+}
+
+func (bpm *BufferPoolManager) FlushPage(pageID int) bool {
+	frameID, found := bpm.pageTable[pageID]
+	if found {
+		page := bpm.pages[frameID]
+		bpm.diskManager.WritePage(page)
+		page.dirty = false //written to disk, i.e. up to date
+		return true
+	}
+	return false
+}
+
+func (bpm *BufferPoolManager) FlushAllPages() {
+	for id := range bpm.pageTable {
+		bpm.FlushPage(id)
+	}
+}
