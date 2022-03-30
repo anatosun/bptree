@@ -22,19 +22,26 @@ func (page *Page) getPinCounter() int {
 	return page.pinCounter
 }
 
+func (page *Page) setPinCounter(val int) {
+	page.pinCounter = val
+}
+
+func (page *Page) hasZeroPins() bool {
+	return page.pinCounter <= 0
+}
+
 func (page *Page) increasePinCounter() error {
 	//possibly implement limit on pins here
 	page.pinCounter++
 	return nil
 }
 
-func (page *Page) decreasePinCounter() error {
+func (page *Page) decreasePinCounter() {
 	//possibly implement limit on pins here
 	if page.pinCounter <= 0 {
-		panic(fmt.Errorf("page.go: Counter is already zero"))
+		fmt.Errorf("page.go: Counter is already zero")
 	} else {
 		page.pinCounter--
-		return nil
 	}
 }
 
