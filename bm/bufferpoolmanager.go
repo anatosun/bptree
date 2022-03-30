@@ -9,7 +9,7 @@ const BufferPoolCapacity = 4
 
 type BufferPoolManager struct {
 	diskManager    DiskManager
-	pages          [BufferPoolCapacity]*Page
+	pool           [BufferPoolCapacity]*Page
 	replacePolicy  *ClockPolicy
 	freeFramesList []int
 	pagesTable     map[int]int
@@ -33,7 +33,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
-		page := bpm.pages[*frameID]
+		page := bpm.pool[*frameID]
 		if page.IsDirty() {
 			// save to disk
 			bpm.diskManager.WritePage(page)
@@ -53,7 +53,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 	id := bpm.diskManager.AllocatePage()
 	page := &Page{id: *id, data: [pageSize]byte{}, dirty: false, pinCounter: 1}
 	bpm.pagesTable[*id] = *frameID
-	bpm.pages[*frameID] = page
+	bpm.pool[*frameID] = page
 
 	// return Page
 	return page
@@ -79,7 +79,7 @@ func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 	if !found {
 		return errors.New("Page doesn't exist")
 	}
-	page := bpm.pages[frameID]
+	page := bpm.pool[frameID]
 	page.decreasePinCounter()
 
 	if page.getPinCounter() <= 0 {
@@ -94,7 +94,7 @@ func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 }
 
 func (bpm *BufferPoolManager) PrintPages() {
-	for _, page := range bpm.pages {
+	for _, page := range bpm.pool {
 		page.Print()
 	}
 }
@@ -106,7 +106,7 @@ func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
 	frameID, found := bpm.pagesTable[pageID]
 
 	if found {
-		page := bpm.pages[frameID]
+		page := bpm.pool[frameID]
 		page.increasePinCounter()
 
 		(*bpm.replacePolicy).Pin(frameID) // remove page from clock
@@ -125,7 +125,7 @@ func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
 
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
-		page := bpm.pages[*freeFrameID]
+		page := bpm.pool[*freeFrameID]
 		if page.IsDirty() {
 			// save to disk
 			bpm.diskManager.WritePage(page)
@@ -148,7 +148,7 @@ func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
 
 	(*page).setPinCounter(1)
 	bpm.pagesTable[pageID] = *freeFrameID
-	bpm.pages[*freeFrameID] = page
+	bpm.pool[*freeFrameID] = page
 
 	return page
 }
@@ -161,7 +161,7 @@ func (bpm *BufferPoolManager) DeletePage(pageID int) error {
 		return errors.New("Page doesn't exist")
 	}
 
-	page := bpm.pages[frameID]
+	page := bpm.pool[frameID]
 
 	if !page.hasZeroPins() {
 		return errors.New("Page is still in use, cannot be deleted")
@@ -179,7 +179,7 @@ func (bpm *BufferPoolManager) DeletePage(pageID int) error {
 func (bpm *BufferPoolManager) FlushPage(pageID int) bool {
 	frameID, found := bpm.pagesTable[pageID]
 	if found {
-		page := bpm.pages[frameID]
+		page := bpm.pool[frameID]
 		bpm.diskManager.WritePage(page)
 		page.dirty = false //written to disk, i.e. up to date
 		return true
