@@ -1,3 +1,7 @@
+// This is a Mock Disk Manager, still saved to memory
+// Source: https://github.com/brunocalza/buffer-pool-manager/blob/56e7b500fb3aa8884b71e8b478da909c0da1a918/disk_manager_mock.go
+// Will be implemented correctly at some point later.. :)
+
 package bm
 
 import (
