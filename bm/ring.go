@@ -97,11 +97,20 @@ func (ring *Ring) Remove(key interface{}) bool {
         ring.elements = append(ring.elements[:i], ring.elements[i+1:]...) // not so efficient
         ring.elements = append(ring.elements, RingNode{})
 
-        if ring.pointer == ring.size || ring.pointer == i && i != 0 {
+        //Note: the pointer always points to the >next< element that will
+        // be returned when using Next()
+
+        //So, if the pointer is smaller or equal to the index
+        // of the element to be remvoed, then nothing happens.
+        // =>Do nothing
+
+        //However, if the pointer is after the element that is removed
+        // then we need to decrease, since all elements after the
+        // one being removed are shifted to the left by 1
+
+        if ring.pointer > i {
             //move down
             ring.pointer--
-        } else if i == 0 {
-            ring.pointer = ring.size - 1
         }
 
         ring.size--
