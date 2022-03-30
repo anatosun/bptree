@@ -139,3 +139,6 @@ func (ring *Ring) IsFull() bool {
 func (ring *Ring) IsEmpty() bool {
     return ring.size == 0
 }
+func (ring *Ring) GetSize() int {
+    return ring.size
+}
