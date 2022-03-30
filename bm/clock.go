@@ -1,18 +1,19 @@
 package bm
 
 import (
-//	"fmt"
+	"fmt"
 )
+
+const debug bool = false
 
 type ClockPolicy struct {
 	clock *Ring
-	hand  int
 }
 
 func NewClockPolicy(capacity int) *ClockPolicy {
 	var ring *Ring
 	ring = NewRing(capacity)
-	return &ClockPolicy{ring, 0}
+	return &ClockPolicy{ring}
 }
 
 func (c *ClockPolicy) Size() int {
@@ -26,9 +27,6 @@ func (c *ClockPolicy) Pin(id int) bool {
 func (c *ClockPolicy) Unpin(id int) {
 	if !c.clock.HasKey(id) {
 		c.clock.Insert(id, true)
-		// if c.cList.size == 1 {
-		// 	c.clockHand = &c.cList.head
-		// }
 	}
 }
 
@@ -41,27 +39,41 @@ func (c *ClockPolicy) Victim() *int {
 
 	var victimFrameID *int
 
+	if debug {
+		fmt.Println("Running victim....")
+	}
+
 	for {
 		currentNode := c.clock.Next()
 
+		if debug {
+			fmt.Printf("node: key=%d ; value=%t \n", currentNode.key.(int), currentNode.value.(bool))
+		}
+
 		if currentNode.value.(bool) {
 			currentNode.value = false
-
-			//key, _ := currentNode.key.(int)
-			//c.hand = key
-
 		} else {
 			key, _ := currentNode.key.(int)
 			frameID := key
 			victimFrameID = &frameID
 
-			//c.hand, _ = c.clock.Next().key.(int)
+			if debug {
+				fmt.Printf("returning node: key=%d ; value=%t ; pointer of ring=%d\n", currentNode.key.(int), currentNode.value.(bool), c.clock.pointer)
+			}
 
 			c.clock.Remove(currentNode.key)
+
+			if debug {
+				fmt.Printf("pointer of ring after removal=%d\n", c.clock.pointer)
+			}
+
 			return victimFrameID
 		}
 
 	}
 
+	if debug {
+		fmt.Println("Nothing returned... ending victim")
+	}
 	return nil
 }
