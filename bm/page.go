@@ -36,13 +36,16 @@ func (page *Page) increasePinCounter() error {
 	return nil
 }
 
-func (page *Page) decreasePinCounter() {
+func (page *Page) decreasePinCounter() error {
 	//possibly implement limit on pins here
 	if page.pinCounter <= 0 {
-		fmt.Errorf("page.go: Counter is already zero")
-	} else {
-		page.pinCounter--
+		return fmt.Errorf("page.go: Counter is already zero")
 	}
+
+	page.pinCounter--
+
+	return nil
+
 }
 
 func (page *Page) IsDirty() bool {
