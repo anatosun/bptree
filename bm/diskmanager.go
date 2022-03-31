@@ -6,6 +6,7 @@ package bm
 
 import (
 	"errors"
+	"fmt"
 )
 
 //DiskMaxNumPages sets the disk capacity
@@ -58,4 +59,13 @@ func (d *DiskManagerMock) DeallocatePage(pageID int) {
 //NewDiskManagerMock returns a in-memory mock of disk manager
 func NewDiskManagerMock() *DiskManagerMock {
 	return &DiskManagerMock{-1, make(map[int]*Page)}
+}
+
+//Print pages
+func (d *DiskManagerMock) PrintPages() {
+	fmt.Println("------------------------------------")
+	fmt.Println("Pages on disk:")
+	for _, page := range d.pages {
+		fmt.Printf("page id=%d, dirtybit=%t, counter=%d, content=%v\n", page.getID(), page.IsDirty(), page.getPinCounter(), page.data)
+	}
 }
