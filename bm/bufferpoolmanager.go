@@ -88,7 +88,12 @@ func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 		return errors.New("Page doesn't exist")
 	}
 	page := bpm.pool[frameID]
-	page.decreasePinCounter()
+
+	err := page.decreasePinCounter()
+
+	if err != nil {
+		return err
+	}
 
 	if page.getPinCounter() <= 0 {
 		(*bpm.replacePolicy).Unpin(frameID)
