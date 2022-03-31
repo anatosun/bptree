@@ -128,6 +128,8 @@ func safePointerComputation(pointer int, size int) int {
 }
 
 func (ring *Ring) Print() {
+    fmt.Println("------------------------------------")
+    fmt.Println("Elements in ring:")
     for i := 0; i < ring.size; i++ {
         fmt.Printf("[%d]: %s\n", i, ring.elements[i])
     }
