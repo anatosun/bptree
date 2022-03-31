@@ -6,7 +6,7 @@ import (
     "testing"
 )
 
-func TestRingOperations(t *testing.T) {
+func TestRing(t *testing.T) {
     var ring *Ring
 
     testSize := 10
