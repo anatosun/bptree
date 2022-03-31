@@ -10,7 +10,7 @@ type Bplustree struct {
 	root   *node
 }
 
-func New(degree int) *Bplustree {
+func New(degree int) storage {
 	return &Bplustree{degree: degree, root: nil}
 }
 
