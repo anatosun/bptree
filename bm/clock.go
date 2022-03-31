@@ -11,8 +11,7 @@ type ClockPolicy struct {
 }
 
 func NewClockPolicy(capacity int) *ClockPolicy {
-	var ring *Ring
-	ring = NewRing(capacity)
+	ring := NewRing(capacity)
 	return &ClockPolicy{ring}
 }
 
