@@ -36,6 +36,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 		page := bpm.pool[*frameID]
 		if page.IsDirty() {
 			// save to disk
+			//fmt.Printf("victimizing frame %d with pageID=%d\n", *frameID, page.getID())
 			bpm.diskManager.WritePage(page)
 			page.dirty = false
 		}
@@ -71,7 +72,6 @@ func (bpm *BufferPoolManager) GetFrameID() (*int, bool) {
 
 func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 	// Unpin page by decreasing counter.
-	// If counter == 0 => put into replacePolicy for eviction
 	// If isDirty is true, then set dirtybit to true
 
 	frameID, found := bpm.pagesTable[pageID]
