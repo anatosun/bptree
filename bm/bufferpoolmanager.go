@@ -6,6 +6,7 @@ import (
 )
 
 const BufferPoolCapacity = 4
+const debug_buffer = false
 
 type BufferPoolManager struct {
 	diskManager    DiskManager
@@ -36,9 +37,16 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 		page := bpm.pool[*frameID]
 		if page.IsDirty() {
 			// save to disk
-			//fmt.Printf("victimizing frame %d with pageID=%d\n", *frameID, page.getID())
 			bpm.diskManager.WritePage(page)
 			page.dirty = false
+			page.pinCounter = 0
+
+		} else {
+			// let's still save it to disk
+			// since we're currently only emulating the disk
+			bpm.diskManager.WritePage(page)
+			page.dirty = false
+			page.pinCounter = 0
 		}
 
 		//remove page from frame
@@ -94,8 +102,10 @@ func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
 }
 
 func (bpm *BufferPoolManager) PrintPages() {
+	fmt.Println("------------------------------------")
+	fmt.Println("Pages in Buffer Pool:")
 	for _, page := range bpm.pool {
-		page.Print()
+		fmt.Printf("page id=%d, dirtybit=%t, counter=%d, content=%v\n", page.getID(), page.IsDirty(), page.getPinCounter(), page.data)
 	}
 }
 
@@ -112,24 +122,33 @@ func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
 		(*bpm.replacePolicy).Pin(frameID) // remove page from clock
 		return page
 
-		fmt.Printf("pageID=%d,frameID=%d exists in buffer pool\n", pageID, frameID)
+		if debug_buffer {
+			fmt.Printf("pageID=%d,frameID=%d exists in buffer pool\n", pageID, frameID)
+		}
 	} else {
-		// Page doesn't exist in buffer pool,
-		// time to load it
-
-		fmt.Printf("pageID=%d doesn't exists in buffer pool\n", pageID)
+		// Page doesn't exist in buffer pool
+		if debug_buffer {
+			fmt.Printf("pageID=%d doesn't exists in buffer pool\n", pageID)
+		}
 	}
 
 	// first get a free frameID
 	freeFrameID, isFromFreeFramesList := bpm.GetFrameID()
 
-	// Victimized, i.e. not from free list
+	// If Victimized, i.e. not from free list, save to disk
 	if !isFromFreeFramesList {
 		page := bpm.pool[*freeFrameID]
 		if page.IsDirty() {
 			// save to disk
 			bpm.diskManager.WritePage(page)
 			page.dirty = false
+			page.pinCounter = 0
+		} else {
+			// let's still save it to disk
+			// since we're currently only emulating the disk
+			bpm.diskManager.WritePage(page)
+			page.dirty = false
+			page.pinCounter = 0
 		}
 
 		//remove page from frame
@@ -172,6 +191,8 @@ func (bpm *BufferPoolManager) DeletePage(pageID int) error {
 	bpm.freeFramesList = append(bpm.freeFramesList, frameID)
 
 	// Note: The page will still stay inside of the pagesTable until it has been replaced
+	// by the page replacer.
+	// Let's call this a feature.
 
 	return nil
 }
