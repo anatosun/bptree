@@ -97,8 +97,15 @@ func (left *node) splitLeaf(middle, right *node, at int) error {
 	middle.entries = append(middle.entries, left.entries[left.degree:]...)
 	left.entries = left.entries[:left.degree]
 
-	right.insertChildAt(at+1, middle)
-	right.insertEntryAt(at, middle.entries[0])
+	err := right.insertChildAt(at+1, middle)
+	if err != nil {
+		return err
+	}
+
+	err = right.insertEntryAt(at, middle.entries[0])
+	if err != nil {
+		return err
+	}
 
 	return nil
 

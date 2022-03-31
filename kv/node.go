@@ -70,8 +70,15 @@ func (left *node) splitNode(middle, right *node, at int) error {
 	middle.children = append(middle.children, left.children[:left.degree]...)
 	left.children = left.children[left.degree:]
 
-	right.insertChildAt(at, middle)
-	right.insertEntryAt(at, parentKey)
+	err := right.insertChildAt(at, middle)
+	if err != nil {
+		return err
+	}
+
+	err = right.insertEntryAt(at, parentKey)
+	if err != nil {
+		return err
+	}
 
 	return nil
 
