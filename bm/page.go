@@ -5,7 +5,7 @@ import (
 )
 
 //CONFIG: set here the desired pageSize in bytes
-const pageSize = 256
+const pageSize = 32
 
 type Page struct {
 	id         int
