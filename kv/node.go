@@ -3,40 +3,53 @@ package kv
 import "fmt"
 
 type node struct {
-	entries  []*entry
+	id       uint64
+	dirty    bool
+	entries  []entry
 	degree   int
-	children []*node
-	next     *node
-	prev     *node
+	children []uint64
+	next     uint64
+	prev     uint64
 }
 
-func newNode(degree int) *node {
-	return &node{entries: make([]*entry, 0, degree-1), degree: degree, children: make([]*node, 0, degree-1), next: nil, prev: nil}
+func newNode(id uint64, degree int) *node {
+	return &node{id: id, dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree)}
 }
 
 func (n *node) insertChildAt(at int, child *node) error {
-	n.children = append(n.children[0:at], append([]*node{child}, n.children[at:]...)...)
+	previous_size := len(n.children)
+	n.children = append(n.children[0:at], append([]uint64{child.id}, n.children[at:]...)...)
+	new_size := len(n.children)
+	if previous_size+1 != new_size {
+		return fmt.Errorf("there was a problem inserting child at position %d", at)
+	}
+
 	return nil
 }
 
-func (n *node) recursive(key Key) (*node, int, error) {
+// func (b *Bplustree) recursive(n *node, key Key) (*node, int, error) {
 
-	if n == nil {
-		panic(fmt.Errorf("node is nil"))
-	}
+// 	if n == nil {
+// 		panic(fmt.Errorf("node is nil"))
+// 	}
 
-	at, found := n.search(key)
+// 	at, found := n.search(key)
 
-	if n.isLeaf() {
-		return n, at, nil
-	}
+// 	if n.isLeaf() {
+// 		return n, at, nil
+// 	}
 
-	if found {
-		at++
-	}
+// 	if found {
+// 		at++
+// 	}
 
-	return n.children[at].recursive(key)
-}
+// 	child, err := b.getNodeReference(n.children[at])
+// 	if err != nil {
+// 		return nil, at, err
+// 	}
+
+// 	return b.recursive(child, key)
+// }
 
 func (n *node) full() bool {
 
@@ -44,38 +57,25 @@ func (n *node) full() bool {
 
 }
 
-func (n *node) empty() bool {
-
-	if n == nil {
-		return true
-	}
-
-	if n.isLeaf() {
-		return len(n.entries) == 0
-	}
-
-	return false
-
-}
-
 // dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
-func (left *node) splitNode(middle, right *node, at int) error {
+func (p *node) splitNode(n, sibling *node, i int) error {
 
-	parentKey := left.entries[left.degree-1]
-	middle.entries = make([]*entry, 0, left.degree-1)
-	middle.entries = append(middle.entries, left.entries[:left.degree]...)
-	left.entries = left.entries[left.degree:]
+	parentKey := n.entries[p.degree-1]
 
-	middle.children = make([]*node, 0, left.degree)
-	middle.children = append(middle.children, left.children[:left.degree]...)
-	left.children = left.children[left.degree:]
+	sibling.entries = make([]entry, p.degree-1)
+	copy(sibling.entries, n.entries[:p.degree])
+	n.entries = n.entries[p.degree:]
 
-	err := right.insertChildAt(at, middle)
+	sibling.children = make([]uint64, p.degree)
+	copy(sibling.children, n.children[:p.degree])
+	n.children = n.children[p.degree:]
+
+	err := p.insertChildAt(i, sibling)
 	if err != nil {
 		return err
 	}
 
-	err = right.insertEntryAt(at, parentKey)
+	err = p.insertEntryAt(i, parentKey)
 	if err != nil {
 		return err
 	}
@@ -84,54 +84,14 @@ func (left *node) splitNode(middle, right *node, at int) error {
 
 }
 
-func (n *node) place(e *entry) error {
+func (p *node) split(n, sibling *node, i int) error {
+	p.dirty = true
+	n.dirty = true
+	sibling.dirty = true
 
 	if n.isLeaf() {
-		at, found := n.search(e.key)
-
-		if found {
-			return n.update(at, e.value)
-
-		}
-
-		return n.insertEntryAt(at, e)
+		return p.splitLeaf(n, sibling, i)
 	}
 
-	return n.path(e)
-}
-
-func (n *node) path(e *entry) error {
-	at, found := n.search(e.key)
-
-	if found {
-		at++
-	}
-
-	child := n.children[at]
-
-	if child.full() {
-		sib := newNode(n.degree)
-
-		if err := child.split(sib, n, at); err != nil {
-			return err
-		}
-
-		if e.key >= n.entries[at].key {
-			child = n.children[at+1]
-
-		}
-	}
-
-	return child.place(e)
-}
-
-func (left *node) split(middle, right *node, at int) error {
-
-	if left.isLeaf() {
-
-		return left.splitLeaf(middle, right, at)
-
-	}
-
-	return left.splitNode(middle, right, at)
+	return p.splitNode(n, sibling, i)
 }
