@@ -27,30 +27,6 @@ func (n *node) insertChildAt(at int, child *node) error {
 	return nil
 }
 
-// func (b *Bplustree) recursive(n *node, key Key) (*node, int, error) {
-
-// 	if n == nil {
-// 		panic(fmt.Errorf("node is nil"))
-// 	}
-
-// 	at, found := n.search(key)
-
-// 	if n.isLeaf() {
-// 		return n, at, nil
-// 	}
-
-// 	if found {
-// 		at++
-// 	}
-
-// 	child, err := b.getNodeReference(n.children[at])
-// 	if err != nil {
-// 		return nil, at, err
-// 	}
-
-// 	return b.recursive(child, key)
-// }
-
 func (n *node) full() bool {
 
 	return len(n.entries) == ((2 * int(n.degree)) - 1)
