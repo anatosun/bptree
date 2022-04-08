@@ -19,24 +19,24 @@ func (c *ClockPolicy) Size() int {
 	return c.clock.size
 }
 
-func (c *ClockPolicy) Pin(id int) bool {
+func (c *ClockPolicy) Pin(id PageID) bool {
 	return c.clock.Remove(id)
 }
 
-func (c *ClockPolicy) Unpin(id int) {
+func (c *ClockPolicy) Unpin(id PageID) {
 	if !c.clock.HasKey(id) {
 		c.clock.Insert(id, true)
 	}
 }
 
 // Victim removes the victim frame as defined by the replacement policy
-func (c *ClockPolicy) Victim() *int {
+func (c *ClockPolicy) Victim() *PageID {
 
 	if c.clock.IsEmpty() {
 		return nil
 	}
 
-	var victimFrameID *int
+	var victimFrameID *PageID
 
 	if debug {
 		fmt.Println("Running victim....")
@@ -52,7 +52,7 @@ func (c *ClockPolicy) Victim() *int {
 		if currentNode.value.(bool) {
 			currentNode.value = false
 		} else {
-			key, _ := currentNode.key.(int)
+			key, _ := currentNode.key.(PageID)
 			frameID := key
 			victimFrameID = &frameID
 

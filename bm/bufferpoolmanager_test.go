@@ -20,9 +20,9 @@ func TestBufferPoolManager(t *testing.T) {
 	AssertEqual(t, len(bpm.pool), n)
 
 	// Unpin page with id=2 and set dirty bit
-	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), 1)
+	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(1))
 	AssertEqual(t, bpm.UnpinPage(2, true), nil) //if not nill => error
-	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), 0)
+	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(0))
 	AssertEqual(t, (*bpm.pool[2]).IsDirty(), true)
 
 	// Pages currently in Clock, should be 1
@@ -34,7 +34,7 @@ func TestBufferPoolManager(t *testing.T) {
 
 	//Buffer is full, clock has unpinned(pincount=0) page(id=2), try to get a new page
 	bpm.GetNewPage() // id=4
-	AssertEqual(t, (*bpm.pool[2]).getID(), 4)
+	AssertEqual(t, (*bpm.pool[2]).getID(), PageID(4))
 
 	//Size of clock again, now 0 (should have been removed from Clock)
 	AssertEqual(t, getClockSize(), 0)
@@ -58,7 +58,7 @@ func TestBufferPoolManager(t *testing.T) {
 	bpm.FetchPage(1)
 	bpm.FetchPage(1)
 	// Counter should be at 4 now
-	AssertEqual(t, (*bpm.pool[1]).getPinCounter(), 4)
+	AssertEqual(t, (*bpm.pool[1]).getPinCounter(), uint64(4))
 	(*bpm.pool[1]).setPinCounter(1) //back to 1
 
 	// Unpin all pages with id 0,1,4,3 (remember, page id=2 got replaced with id=4)
@@ -82,8 +82,8 @@ func TestBufferPoolManager(t *testing.T) {
 	// Test fetch from disk
 	bpm.FetchPage(1)
 	bpm.FetchPage(2)
-	AssertEqual(t, (*bpm.pool[1]).getID(), 1) //put into frame 2 and 3, since we unpinned 6,7 wich was in there
-	AssertEqual(t, (*bpm.pool[2]).getID(), 2)
+	AssertEqual(t, (*bpm.pool[1]).getID(), PageID(1)) //put into frame 2 and 3, since we unpinned 6,7 wich was in there
+	AssertEqual(t, (*bpm.pool[2]).getID(), PageID(2))
 
 	// Try to delete page that's in use
 	AssertNotEqual(t, bpm.DeletePage(2), nil) // will not work and throw error

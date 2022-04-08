@@ -12,18 +12,18 @@ type BufferPoolManager struct {
 	diskManager    DiskManager
 	pool           [BufferPoolCapacity]*Page
 	replacePolicy  *ClockPolicy
-	freeFramesList []int
-	pagesTable     map[int]int
+	freeFramesList []PageID
+	pagesTable     map[PageID]PageID
 }
 
 func NewBufferPoolManager(DiskManager DiskManager, clock *ClockPolicy) *BufferPoolManager {
-	freeFramesList := make([]int, 0)
+	freeFramesList := make([]PageID, 0)
 	pages := [BufferPoolCapacity]*Page{}
 	for i := 0; i < BufferPoolCapacity; i++ {
-		freeFramesList = append(freeFramesList, int(i))
-		pages[int(i)] = nil
+		freeFramesList = append(freeFramesList, PageID(i))
+		pages[PageID(i)] = nil
 	}
-	return &BufferPoolManager{DiskManager, pages, clock, freeFramesList, make(map[int]int)}
+	return &BufferPoolManager{DiskManager, pages, clock, freeFramesList, make(map[PageID]PageID)}
 }
 
 func (bpm *BufferPoolManager) GetNewPage() *Page {
@@ -50,7 +50,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 		}
 
 		//remove page from frame
-		delete(bpm.pagesTable, page.id)
+		delete(bpm.pagesTable, PageID(page.id))
 
 		//fmt.Println("Page not from free list")
 	} else {
@@ -68,7 +68,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 	return page
 }
 
-func (bpm *BufferPoolManager) GetFrameID() (*int, bool) {
+func (bpm *BufferPoolManager) GetFrameID() (*PageID, bool) {
 	if len(bpm.freeFramesList) > 0 {
 		frameID := bpm.freeFramesList[0]
 		bpm.freeFramesList = bpm.freeFramesList[1:]
@@ -78,7 +78,7 @@ func (bpm *BufferPoolManager) GetFrameID() (*int, bool) {
 	return (*bpm.replacePolicy).Victim(), false
 }
 
-func (bpm *BufferPoolManager) UnpinPage(pageID int, dirty bool) error {
+func (bpm *BufferPoolManager) UnpinPage(pageID PageID, dirty bool) error {
 	// Unpin page by decreasing counter.
 	// If isDirty is true, then set dirtybit to true
 
@@ -114,7 +114,7 @@ func (bpm *BufferPoolManager) PrintPages() {
 	}
 }
 
-func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
+func (bpm *BufferPoolManager) FetchPage(pageID PageID) *Page {
 	// Fetch page with given pageID,
 
 	//check first if page is in buffer pool, if yes, return
@@ -177,7 +177,7 @@ func (bpm *BufferPoolManager) FetchPage(pageID int) *Page {
 	return page
 }
 
-func (bpm *BufferPoolManager) DeletePage(pageID int) error {
+func (bpm *BufferPoolManager) DeletePage(pageID PageID) error {
 
 	frameID, found := bpm.pagesTable[pageID]
 
@@ -202,7 +202,7 @@ func (bpm *BufferPoolManager) DeletePage(pageID int) error {
 	return nil
 }
 
-func (bpm *BufferPoolManager) FlushPage(pageID int) bool {
+func (bpm *BufferPoolManager) FlushPage(pageID PageID) bool {
 	frameID, found := bpm.pagesTable[pageID]
 	if found {
 		page := bpm.pool[frameID]

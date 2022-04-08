@@ -8,22 +8,24 @@ import (
 // 4 KB
 const PageSize = 4 * 1000
 
+type PageID uint32
+
 type Page struct {
-	id         int
+	id         PageID
 	data       [PageSize]byte
 	dirty      bool
-	pinCounter int
+	pinCounter uint64
 }
 
-func (page *Page) getID() int {
+func (page *Page) getID() PageID {
 	return page.id
 }
 
-func (page *Page) getPinCounter() int {
+func (page *Page) getPinCounter() uint64 {
 	return page.pinCounter
 }
 
-func (page *Page) setPinCounter(val int) {
+func (page *Page) setPinCounter(val uint64) {
 	page.pinCounter = val
 }
 

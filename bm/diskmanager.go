@@ -14,20 +14,20 @@ const DiskMaxPagesCapacity = 20
 
 // DiskManager is responsible for interacting with disk
 type DiskManager interface {
-	ReadPage(pageID int) (*Page, error)
+	ReadPage(pageID PageID) (*Page, error)
 	WritePage(*Page) error
-	AllocatePage() *int
-	DeallocatePage(pageID int)
+	AllocatePage() *PageID
+	DeallocatePage(pageID PageID)
 }
 
 //DiskManagerMock is a memory mock for disk manager
 type DiskManagerMock struct {
-	numPage int // tracks the number of pages. -1 indicates that there is no page, and the next to be allocates is 0
-	pages   map[int]*Page
+	numPage int64 // tracks the number of pages. -1 indicates that there is no page, and the next to be allocates is 0
+	pages   map[PageID]*Page
 }
 
 //ReadPage reads a page from pages
-func (d *DiskManagerMock) ReadPage(pageID int) (*Page, error) {
+func (d *DiskManagerMock) ReadPage(pageID PageID) (*Page, error) {
 	if page, ok := d.pages[pageID]; ok {
 		return page, nil
 	}
@@ -42,23 +42,23 @@ func (d *DiskManagerMock) WritePage(page *Page) error {
 }
 
 //AllocatePage allocates one more page
-func (d *DiskManagerMock) AllocatePage() *int {
+func (d *DiskManagerMock) AllocatePage() *PageID {
 	if d.numPage == DiskMaxPagesCapacity-1 {
 		return nil
 	}
 	d.numPage = d.numPage + 1
-	pageID := int(d.numPage)
+	pageID := PageID(d.numPage)
 	return &pageID
 }
 
 //DeallocatePage removes page from disk
-func (d *DiskManagerMock) DeallocatePage(pageID int) {
+func (d *DiskManagerMock) DeallocatePage(pageID PageID) {
 	delete(d.pages, pageID)
 }
 
 //NewDiskManagerMock returns a in-memory mock of disk manager
 func NewDiskManagerMock() *DiskManagerMock {
-	return &DiskManagerMock{-1, make(map[int]*Page)}
+	return &DiskManagerMock{-1, make(map[PageID]*Page)}
 }
 
 //Print pages
