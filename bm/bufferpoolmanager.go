@@ -60,7 +60,7 @@ func (bpm *BufferPoolManager) GetNewPage() *Page {
 	// allocate new page
 
 	id := bpm.diskManager.AllocatePage()
-	page := &Page{id: *id, data: [pageSize]byte{}, dirty: false, pinCounter: 1}
+	page := &Page{id: *id, data: [PageSize]byte{}, dirty: false, pinCounter: 1}
 	bpm.pagesTable[*id] = *frameID
 	bpm.pool[*frameID] = page
 

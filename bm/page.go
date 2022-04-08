@@ -5,11 +5,12 @@ import (
 )
 
 //CONFIG: set here the desired pageSize in bytes
-const pageSize = 32
+// 4 KB
+const PageSize = 4 * 1000
 
 type Page struct {
 	id         int
-	data       [pageSize]byte
+	data       [PageSize]byte
 	dirty      bool
 	pinCounter int
 }
