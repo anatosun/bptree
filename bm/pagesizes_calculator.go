@@ -4,6 +4,10 @@ import(
 	"fmt"
 )
 
+func main(){
+	ComputePageSizesInBytes(4*1024)
+}
+
 func ComputeLeafNodeSizeInBytes(degree int) int {
 	// Size of a (leaf!) node is computed in the following way:
 	//		degree * size(uint64)	// keysize
@@ -52,6 +56,7 @@ func ComputePageSizesInBytes(desiredTotalPageSizeInBytes int) {
 	fmt.Println("Computed Page Sizes:")
 	fmt.Printf("Desired Total Page Size: %d\n", desiredTotalPageSizeInBytes)
 	fmt.Printf("Actual Total Page Size: %d (-10%% from desired)\n", actualTotalPageSize)
+	fmt.Printf("Page Data Size: %d (- Overhead for Page Meta Data)\n", dataSize)
 	fmt.Printf("Node Degree: %d\n", nodeDegree)
 
 
