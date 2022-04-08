@@ -1,12 +1,8 @@
-package main
+package bm
 
 import(
 	"fmt"
 )
-
-func main(){
-	ComputePageSizesInBytes(4*1024)
-}
 
 func ComputeLeafNodeSizeInBytes(degree int) int {
 	// Size of a (leaf!) node is computed in the following way:
