@@ -4,15 +4,21 @@ import (
 	"fmt"
 )
 
-//CONFIG: set here the desired pageSize in bytes
-// 4 KB
-const PageSize = 4 * 1000
+//CONFIG: set here the desired pageDataSize in bytes
+// 4KB = 4096bytes in total
+
+// Compute these values using pagesizes_calculator.go
+// Desired Total Page Size: 4096
+// Actual Total Page Size: 3687 (-10% from desired)
+// Node Degree: 140
+
+const PageDataSize = 3687
 
 type PageID uint32
 
 type Page struct {
 	id         PageID
-	data       [PageSize]byte
+	data       [PageDataSize]byte
 	dirty      bool
 	pinCounter uint64
 }
