@@ -16,7 +16,7 @@ type BPlusTree struct {
 
 const preaollocation = 1000 * 1000
 
-func New(degree uint8) *BPlusTree {
+func New(degree uint8) storage {
 
 	bpt := &BPlusTree{degree: degree}
 	bpt.nodes = make(map[uint64]*node)
