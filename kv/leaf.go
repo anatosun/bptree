@@ -8,8 +8,14 @@ func (n *node) isLeaf() bool {
 	return len(n.children) == 0
 }
 
-func (n *node) insertEntryAt(at int, e *entry) error {
-	n.entries = append(n.entries[0:at], append([]*entry{e}, n.entries[at:]...)...)
+func (n *node) insertEntryAt(at int, e entry) error {
+	prior := len(n.entries)
+	n.entries = append(n.entries[0:at], append([]entry{e}, n.entries[at:]...)...)
+	after := len(n.entries)
+
+	if prior+1 != after {
+		return fmt.Errorf("error inserting entry")
+	}
 	return nil
 }
 
@@ -18,7 +24,7 @@ func (n *node) update(at int, value Value) error {
 	return nil
 }
 
-func (n *node) removeEntryAt(at int) (*entry, error) {
+func (n *node) removeEntryAt(at int) (entry, error) {
 	prior := len(n.entries)
 	entry := n.entries[at]
 	n.entries = append(n.entries[0:at], n.entries[at+1:]...)
@@ -52,57 +58,23 @@ func (n *node) search(key Key) (int, bool) {
 	return lower, false
 }
 
-func (n *node) scan(leaf *node, at int, fn func(key Key) bool) ([]*Value, error) {
-	const INITIAL_SIZE int = 10
-	values := make([]*Value, 0, INITIAL_SIZE)
-
-	for leaf != nil && at > len(leaf.entries)-1 {
-		at = 0
-		leaf = leaf.next
-	}
-
-	if leaf == nil || at > len(leaf.entries)-1 {
-		return values, nil
-	}
-
-	for !fn(leaf.entries[at].key) {
-
-		values = append(values, &leaf.entries[at].value)
-		if at < len(leaf.entries)-1 {
-			at++
-		} else {
-			leaf = leaf.next
-			at = 0
-		}
-	}
-
-	if at > len(leaf.entries)-1 {
-		return values, nil
-	}
-
-	values = append(values, &leaf.entries[at].value)
-
-	return values, nil
-
-}
-
 // dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
-func (left *node) splitLeaf(middle, right *node, at int) error {
+func (p *node) splitLeaf(n, sibling *node, i int) error {
 
-	middle.next = left.next
-	middle.prev = left
-	left.next = middle
+	sibling.next = n.next
+	sibling.prev = n.id
+	n.next = sibling.id
 
-	middle.entries = make([]*entry, 0, left.degree-1)
-	middle.entries = append(middle.entries, left.entries[left.degree:]...)
-	left.entries = left.entries[:left.degree]
+	sibling.entries = make([]entry, p.degree-1)
+	copy(sibling.entries, n.entries[p.degree:])
+	n.entries = n.entries[:p.degree]
 
-	err := right.insertChildAt(at+1, middle)
+	err := p.insertChildAt(i+1, sibling)
+
 	if err != nil {
 		return err
 	}
-
-	err = right.insertEntryAt(at, middle.entries[0])
+	err = p.insertEntryAt(i, sibling.entries[0])
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,7 @@ type metadata struct {
 	pageSize uint32
 	size     uint32
 	root     uint32
-	free     []int
+	free     []uint64
 }
 
 func (meta metadata) Marshal() ([]byte, error) {
@@ -57,10 +57,10 @@ func (meta *metadata) Unmarshal(data []byte) error {
 	meta.size = binary.LittleEndian.Uint32(data[12:16])
 	meta.root = binary.LittleEndian.Uint32(data[16:20])
 	space := binary.LittleEndian.Uint32(data[20:24])
-	meta.free = make([]int, space)
+	meta.free = make([]uint64, space)
 	cursor := 24
 	for i := 0; i < int(space); i++ {
-		meta.free[i] = int(binary.LittleEndian.Uint32(data[cursor : cursor+4]))
+		meta.free[i] = uint64(binary.LittleEndian.Uint32(data[cursor : cursor+4]))
 		cursor += 4
 	}
 	return nil

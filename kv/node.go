@@ -5,14 +5,14 @@ import "fmt"
 type node struct {
 	id       uint64
 	dirty    bool
-	entries  []entry
-	degree   int
-	children []uint64
+	degree   uint8
 	next     uint64
 	prev     uint64
+	children []uint64
+	entries  []entry
 }
 
-func newNode(id uint64, degree int) *node {
+func newNode(id uint64, degree uint8) *node {
 	return &node{id: id, dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree)}
 }
 
@@ -53,7 +53,7 @@ func (n *node) insertChildAt(at int, child *node) error {
 
 func (n *node) full() bool {
 
-	return len(n.entries) == ((2 * n.degree) - 1)
+	return len(n.entries) == ((2 * int(n.degree)) - 1)
 
 }
 
