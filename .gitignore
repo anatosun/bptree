@@ -17,3 +17,6 @@
 
 #mac
 .DS_Store
+
+# backup files from previous implementation that should stay locally
+kv/*_bak
