@@ -33,7 +33,7 @@ func New(degree uint8) storage {
 
 	bpt.meta.free = make([]uint64, preaollocation)
 
-	for i := 0; i < preaollocation; i++ {
+	for i := range bpt.meta.free {
 		bpt.meta.free[i] = uint64(i + 2)
 	}
 
