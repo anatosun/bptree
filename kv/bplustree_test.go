@@ -30,7 +30,7 @@ func TestInsert(t *testing.T) {
 
 	for i := 0; i < size; i++ {
 		t.Logf("inserting %d", array[i])
-		err := store.Insert(Key(array[i]), Value{byte(array[i])})
+		_, err := store.Insert(Key(array[i]), Value{byte(array[i])})
 		if err != nil {
 			t.Errorf("while inserting to kv store(%d): %v", i, err)
 			t.FailNow()
@@ -79,9 +79,15 @@ func TestUpdate(t *testing.T) {
 	for i := 0; i < len(array); i++ {
 		r := rand.Int()
 		if r != array[i] {
-			err := store.Insert(Key(array[i]), Value{byte(array[i])})
+			success, err := store.Insert(Key(array[i]), Value{byte(array[i])})
+
 			if err != nil {
-				t.Errorf("while updating %d to value %d: %v", array[i], r, err)
+				t.Errorf("error while updating %d to value %d: %v", array[i], r, err)
+				t.FailNow()
+			}
+
+			if success {
+				t.Errorf("error while updating %d to value %d: value was not updated", array[i], r)
 				t.FailNow()
 			}
 		}
