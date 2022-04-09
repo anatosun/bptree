@@ -1,7 +1,5 @@
 package kv
 
-import "fmt"
-
 type node struct {
 	id       uint64
 	dirty    bool
@@ -17,11 +15,12 @@ func newNode(id uint64, degree uint8) *node {
 }
 
 func (n *node) insertChildAt(at int, child *node) error {
-	previous_size := len(n.children)
+	prior_size := len(n.children)
 	n.children = append(n.children[0:at], append([]uint64{child.id}, n.children[at:]...)...)
-	new_size := len(n.children)
-	if previous_size+1 != new_size {
-		return fmt.Errorf("there was a problem inserting child at position %d", at)
+	current_size := len(n.children)
+
+	if prior_size+1 != current_size {
+		return &InsertionError{Type: "child", Value: child, Size: current_size, Position: at, Capacity: cap(n.children)}
 	}
 
 	return nil

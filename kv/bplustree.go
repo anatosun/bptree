@@ -3,10 +3,6 @@
 // binary data and value is uint64.
 package kv
 
-import (
-	"errors"
-)
-
 type BPlusTree struct {
 	degree uint8
 	nodes  map[uint64]*node // node cache to avoid IO
@@ -63,12 +59,12 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 	if node, at, found, err := bpt.search(bpt.root, key); err != nil {
 		return nil, err
 	} else if found {
-		e, err := node.removeEntryAt(at)
+		e, err := node.deleteEntryAt(at)
 		bpt.meta.size--
 		return &e.value, err
 	}
 
-	return nil, errors.New("key could not be found")
+	return nil, &KeyNotFoundError{Value: key}
 
 }
 
@@ -80,7 +76,7 @@ func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 		return &n.entries[at].value, nil
 	}
 
-	return nil, errors.New("key could not be found")
+	return nil, &KeyNotFoundError{Value: key}
 
 }
 

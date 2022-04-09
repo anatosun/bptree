@@ -1,20 +1,16 @@
 package kv
 
-import (
-	"fmt"
-)
-
 func (n *node) isLeaf() bool {
 	return len(n.children) == 0
 }
 
 func (n *node) insertEntryAt(at int, e entry) error {
-	prior := len(n.entries)
+	prior_size := len(n.entries)
 	n.entries = append(n.entries[0:at], append([]entry{e}, n.entries[at:]...)...)
-	after := len(n.entries)
+	current_size := len(n.entries)
 
-	if prior+1 != after {
-		return fmt.Errorf("error inserting entry")
+	if prior_size+1 != current_size {
+		return &InsertionError{Type: "child", Value: e, Size: current_size, Position: at, Capacity: cap(n.entries)}
 	}
 	return nil
 }
@@ -24,14 +20,14 @@ func (n *node) update(at int, value Value) error {
 	return nil
 }
 
-func (n *node) removeEntryAt(at int) (entry, error) {
-	prior := len(n.entries)
+func (n *node) deleteEntryAt(at int) (entry, error) {
+	prior_size := len(n.entries)
 	entry := n.entries[at]
 	n.entries = append(n.entries[0:at], n.entries[at+1:]...)
-	after := len(n.entries)
+	current_size := len(n.entries)
 
-	if prior != after+1 {
-		return entry, fmt.Errorf("error deleting entry")
+	if prior_size != current_size+1 {
+		return entry, &DeletionError{Type: "child", Value: entry, Size: current_size, Position: at, Capacity: cap(n.entries)}
 	}
 
 	return entry, nil
