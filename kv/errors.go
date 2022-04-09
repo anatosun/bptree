@@ -33,3 +33,31 @@ type DeletionError struct {
 func (err *DeletionError) Error() string {
 	return fmt.Sprintf("could not delete %v with value %v at position %d in slice of size %d/%d", err.Type, err.Value, err.Position, err.Size, err.Capacity)
 }
+
+type OverflowError struct {
+	Type   interface{}
+	Max    interface{}
+	Actual interface{}
+}
+
+func (err *OverflowError) Error() string {
+	return fmt.Sprintf("the size of the slice \"%v\" exceeds its supposed bound %v/%v", err.Type, err.Max, err.Actual)
+}
+
+type IllegalValueError struct {
+	Value interface{}
+	Type  interface{}
+}
+
+func (err *IllegalValueError) Error() string {
+	return fmt.Sprintf("illegal value %v cannot be used as type %v", err.Value, err.Type)
+}
+
+type BufferOverflowError struct {
+	Max    interface{}
+	Cursor interface{}
+}
+
+func (err *BufferOverflowError) Error() string {
+	return fmt.Sprintf("buffer overflow: max %v, cursor %v", err.Max, err.Cursor)
+}
