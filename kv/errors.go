@@ -61,3 +61,13 @@ type BufferOverflowError struct {
 func (err *BufferOverflowError) Error() string {
 	return fmt.Sprintf("buffer overflow: max %v, cursor %v", err.Max, err.Cursor)
 }
+
+type InvalidSizeError struct {
+	Got  interface{}
+	From interface{}
+	To   interface{}
+}
+
+func (err *InvalidSizeError) Error() string {
+	return fmt.Sprintf("invalid size for data to unmarshal %v, expected a size between %v and %v", err.Got, err.From, err.To)
+}
