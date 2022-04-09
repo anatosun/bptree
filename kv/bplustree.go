@@ -92,7 +92,6 @@ func (bpt *BPlusTree) search(n *node, key Key) (child *node, at int, found bool,
 	if found {
 		at++
 	}
-
 	child, err = bpt.nodeRef(n.children[at])
 	if err != nil {
 		return nil, 0, false, err
