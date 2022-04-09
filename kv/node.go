@@ -2,8 +2,10 @@ package kv
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
+const pageSize = 4 * 1024 // 4KB
 type node struct {
 	id       uint64
 	dirty    bool
@@ -82,7 +84,7 @@ func (p *node) split(n, sibling *node, i int) error {
 }
 
 func (n *node) marshal() ([]byte, error) {
-	capacity := 4 * 1024 // 4KB
+	capacity := pageSize // 4KB
 	buf := make([]byte, capacity)
 
 	bin := binary.LittleEndian
@@ -113,10 +115,18 @@ func (n *node) marshal() ([]byte, error) {
 		}
 	}
 
+	if len(buf) > pageSize {
+		return buf, &InvalidSizeError{Got: len(buf), From: "10 bytes", To: fmt.Sprintf("%d bytes", pageSize)}
+	}
+
 	return buf, nil
 }
 
 func (n *node) unmarshal(data []byte) error {
+
+	if len(data) > pageSize {
+		return &InvalidSizeError{Got: len(data), From: "10 bytes", To: fmt.Sprintf("%d bytes", pageSize)}
+	}
 	n.dirty = true
 	bin := binary.LittleEndian
 	n.id = bin.Uint64(data[0:8])
