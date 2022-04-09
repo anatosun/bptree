@@ -5,6 +5,7 @@ func (n *node) isLeaf() bool {
 }
 
 func (n *node) insertEntryAt(at int, e entry) error {
+	n.dirty = true
 	prior_size := len(n.entries)
 	n.entries = append(n.entries[0:at], append([]entry{e}, n.entries[at:]...)...)
 	current_size := len(n.entries)
@@ -12,15 +13,25 @@ func (n *node) insertEntryAt(at int, e entry) error {
 	if prior_size+1 != current_size {
 		return &InsertionError{Type: "child", Value: e, Size: current_size, Position: at, Capacity: cap(n.entries)}
 	}
+
+	if len(n.entries) > ((2 * int(n.degree)) - 1) {
+
+		return &OverflowError{Type: "entry", Max: ((2 * int(n.degree)) - 1), Actual: current_size}
+	}
+
 	return nil
 }
 
 func (n *node) update(at int, value Value) error {
-	n.entries[at].value = value
+	if n.entries[at].value != value {
+		n.dirty = true
+		n.entries[at].value = value
+	}
 	return nil
 }
 
 func (n *node) deleteEntryAt(at int) (entry, error) {
+	n.dirty = true
 	prior_size := len(n.entries)
 	entry := n.entries[at]
 	n.entries = append(n.entries[0:at], n.entries[at+1:]...)
@@ -28,6 +39,11 @@ func (n *node) deleteEntryAt(at int) (entry, error) {
 
 	if prior_size != current_size+1 {
 		return entry, &DeletionError{Type: "child", Value: entry, Size: current_size, Position: at, Capacity: cap(n.entries)}
+	}
+
+	if len(n.entries) > ((2 * int(n.degree)) - 1) {
+
+		return entry, &OverflowError{Type: "entry", Max: ((2 * int(n.degree)) - 1), Actual: current_size}
 	}
 
 	return entry, nil
@@ -77,4 +93,12 @@ func (p *node) splitLeaf(n, sibling *node, i int) error {
 
 	return nil
 
+}
+
+func (n *node) marshalLeafBool() byte {
+	if n.isLeaf() {
+		return uint8(0x0)
+
+	}
+	return uint8(0x1)
 }
