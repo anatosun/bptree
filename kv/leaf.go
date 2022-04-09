@@ -94,11 +94,3 @@ func (p *node) splitLeaf(n, sibling *node, i int) error {
 	return nil
 
 }
-
-func (n *node) marshalLeafBool() byte {
-	if n.isLeaf() {
-		return uint8(0x0)
-
-	}
-	return uint8(0x1)
-}
