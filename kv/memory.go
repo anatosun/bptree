@@ -47,6 +47,7 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 	pid, rem, err := findSequentialFreeSpace(tree.meta.free, n)
 	tree.meta.free = rem
 
+	// ask for more pages to the buffer pool
 	if err != nil {
 		// var err error
 		// pid, err = tree.pager.Alloc(n)
@@ -66,3 +67,21 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 
 	return nodes, nil
 }
+
+// write queries the bufferpool manager to write the node to disk
+
+// uncomment this function once the bufferpool implements the proper methods
+// func (bpt *BPlusTree) write() error {
+
+// 	for _, node := range bpt.nodes {
+// 		if node.dirty {
+
+// 			if err := bpt.bufferpool.Marshal(node); err != nil {
+// 				return err
+// 			}
+// 			node.dirty = false
+// 		}
+// 	}
+
+// 	return bpt.bufferpool.Marshal(bpt.meta)
+// }
