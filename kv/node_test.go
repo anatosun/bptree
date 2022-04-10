@@ -23,7 +23,7 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 		node.insertChildAt(i, newNode(children[i], degree))
 	}
 
-	data, err := node.marshal()
+	data, err := node.MarshalBinary()
 	if err != nil {
 		t.Errorf("while marshaling: %v", err)
 		t.FailNow()
@@ -32,7 +32,7 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 	u := newNode(546, 78) // let's initialise it we dummy values
 	u.next = 480
 	u.prev = 128
-	err = u.unmarshal(data)
+	err = u.UnmarshalBinary(data)
 
 	if err != nil {
 		t.Errorf("while unmarshaling: %v", err)

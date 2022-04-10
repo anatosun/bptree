@@ -83,7 +83,10 @@ func (p *node) split(n, sibling *node, i int) error {
 	return p.splitNode(n, sibling, i)
 }
 
-func (n *node) marshal() ([]byte, error) {
+// the two functions below implement both the BinaryMarshaler and the BinaryUnmarshaler interfaces
+// refer to https://pkg.go.dev/encoding for more informations
+
+func (n *node) MarshalBinary() ([]byte, error) {
 	capacity := pageSize // 4KB
 	buf := make([]byte, capacity)
 
@@ -122,7 +125,7 @@ func (n *node) marshal() ([]byte, error) {
 	return buf, nil
 }
 
-func (n *node) unmarshal(data []byte) error {
+func (n *node) UnmarshalBinary(data []byte) error {
 
 	if len(data) > pageSize {
 		return &InvalidSizeError{Got: len(data), From: "10 bytes", To: fmt.Sprintf("%d bytes", pageSize)}

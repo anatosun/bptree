@@ -17,7 +17,7 @@ func TestMarshalUnmarshalLeaf(t *testing.T) {
 		leaf.insertEntryAt(i, entry)
 	}
 
-	data, err := leaf.marshal()
+	data, err := leaf.MarshalBinary()
 	if err != nil {
 		t.Errorf("while marshaling: %v", err)
 		t.FailNow()
@@ -26,7 +26,7 @@ func TestMarshalUnmarshalLeaf(t *testing.T) {
 	u := newNode(54, 86) // let's initialise it we dummy values
 	u.next = 480
 	u.prev = 128
-	err = u.unmarshal(data)
+	err = u.UnmarshalBinary(data)
 
 	if err != nil {
 		t.Errorf("while unmarshaling: %v", err)

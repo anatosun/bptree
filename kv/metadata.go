@@ -19,7 +19,8 @@ type metadata struct {
 	free     []uint64
 }
 
-func (meta metadata) Marshal() ([]byte, error) {
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (meta metadata) MarshalBinary() ([]byte, error) {
 	buffer := make([]byte, 0, meta.pageSize)
 	space := int(meta.pageSize) - header
 
@@ -42,7 +43,8 @@ func (meta metadata) Marshal() ([]byte, error) {
 	return buffer, nil
 }
 
-func (meta *metadata) Unmarshal(data []byte) error {
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (meta *metadata) UnmarshalBinary(data []byte) error {
 
 	if len(data) < header {
 		return fmt.Errorf("data is invalid")
