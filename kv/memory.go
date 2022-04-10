@@ -79,9 +79,19 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 // 			if err := bpt.bufferpool.Marshal(node); err != nil {
 // 				return err
 // 			}
+
 // 			node.dirty = false
 // 		}
 // 	}
+// 	if bpt.meta.dirty {
 
-// 	return bpt.bufferpool.Marshal(bpt.meta)
+// 		if err := bpt.bufferpool.Marshal(bpt.meta); err != nil {
+// 			return err
+// 		}
+
+// 		bpt.meta.dirty = false
+
+// 	}
+
+// 	return nil
 // }
