@@ -1,8 +1,8 @@
 package kv
 
 import (
+	"crypto/rand"
 	"encoding/binary"
-	"fmt"
 )
 
 const pageSize = 4 * 1024 // 4KB
@@ -89,7 +89,9 @@ func (p *node) split(n, sibling *node, i int) error {
 func (n *node) MarshalBinary() ([]byte, error) {
 	capacity := pageSize // 4KB
 	buf := make([]byte, capacity)
-
+	if _, err := rand.Read(buf); err != nil {
+		return buf, err
+	}
 	bin := binary.LittleEndian
 	bin.PutUint64(buf[0:8], n.id)
 	buf[8] = n.degree               // 8th byte
@@ -103,7 +105,9 @@ func (n *node) MarshalBinary() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		buf = append(buf[:cursor], eb...)
+		for j := 0; j < len(eb); j++ {
+			buf[cursor+j] = eb[j]
+		}
 		cursor += entrySize
 		if cursor > capacity {
 			return buf, &BufferOverflowError{Max: capacity, Cursor: cursor}
@@ -118,8 +122,8 @@ func (n *node) MarshalBinary() ([]byte, error) {
 		}
 	}
 
-	if len(buf) > pageSize {
-		return buf, &InvalidSizeError{Got: len(buf), From: "10 bytes", To: fmt.Sprintf("%d bytes", pageSize)}
+	if len(buf) != pageSize {
+		return buf, &InvalidSizeError{Got: len(buf), Should: pageSize}
 	}
 
 	return buf, nil
@@ -128,7 +132,7 @@ func (n *node) MarshalBinary() ([]byte, error) {
 func (n *node) UnmarshalBinary(data []byte) error {
 
 	if len(data) > pageSize {
-		return &InvalidSizeError{Got: len(data), From: "10 bytes", To: fmt.Sprintf("%d bytes", pageSize)}
+		return &InvalidSizeError{Got: len(data), Should: pageSize}
 	}
 	n.dirty = true
 	bin := binary.LittleEndian
