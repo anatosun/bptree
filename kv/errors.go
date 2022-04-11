@@ -63,11 +63,10 @@ func (err *BufferOverflowError) Error() string {
 }
 
 type InvalidSizeError struct {
-	Got  interface{}
-	From interface{}
-	To   interface{}
+	Got    interface{}
+	Should interface{}
 }
 
 func (err *InvalidSizeError) Error() string {
-	return fmt.Sprintf("invalid size for data to unmarshal %v, expected a size between %v and %v", err.Got, err.From, err.To)
+	return fmt.Sprintf("invalid size for data, got %v expected %v", err.Got, err.Should)
 }
