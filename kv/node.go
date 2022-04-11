@@ -6,6 +6,9 @@ import (
 )
 
 const pageSize = 4 * 1024 // 4KB
+
+type NodeID uint64 //todo: replace id uint64 through NodeID throughout the whole code
+
 type node struct {
 	id       uint64
 	dirty    bool
@@ -14,6 +17,7 @@ type node struct {
 	prev     uint64
 	children []uint64
 	entries  []entry
+	pinCounter uint64
 }
 
 func newNode(id uint64, degree uint8) *node {

@@ -36,6 +36,7 @@ func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
 	// if err := tree.pager.Unmarshal(id, n); err != nil {
 	// 	return nil, err
 	// }
+	// FETCH PAGE WITH ID
 	n.dirty = false
 	tree.nodes[n.id] = n
 
