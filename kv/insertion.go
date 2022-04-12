@@ -36,15 +36,25 @@ func (bpt *BPlusTree) insertLeaf(n *node, e entry) (bool, error) {
 	at, found := n.search(e.key)
 
 	if found {
-		n.update(at, e.value)
-		return false, nil
+		err := n.update(at, e.value)
+		if err != nil {
+			// attempt to unpin node before returning the error
+			// bpt.bpm.UnpinNode(NodeID(n.id))
+			return false, err
+		}
+		// err = bpt.bpm.UnpinNode(NodeID(n.id))
+		return false, err
 	}
 
 	err := n.insertEntryAt(at, e)
 	if err != nil {
+		// attempt to unpin node before returning the error
+		// bpt.bpm.UnpinNode(NodeID(n.id))
 		return false, err
 	}
-	return true, nil
+	// unpin the node when the insertion has take place
+	// err = bpt.bpm.UnpinNode(NodeID(n.id))
+	return true, err
 }
 
 func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
@@ -76,5 +86,9 @@ func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
 		}
 	}
 
+	// err = bpt.bpm.UnpinNode(NodeID(node.id))
+	// if err != nil {
+	// 	return false, err
+	// }
 	return bpt.path(child, e)
 }
