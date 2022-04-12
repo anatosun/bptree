@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var store storage
+var store *BPlusTree
 var array []int
 
 const size = 100000

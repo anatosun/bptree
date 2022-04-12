@@ -13,7 +13,7 @@ type BPlusTree struct {
 
 const preaollocation = 1000 * 1000
 
-func New(degree uint8) storage {
+func New(degree uint8) *BPlusTree {
 
 	clock := NewClockPolicy(BufferPoolCapacity)
 	disk := NewDiskManagerMock()
