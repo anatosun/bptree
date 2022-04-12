@@ -50,7 +50,7 @@ func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
 		at++
 	}
 
-	child, err := bpt.nodeRef(n.children[at])
+	child, err := bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
 	if err != nil {
 		return false, err
 	}
@@ -66,7 +66,7 @@ func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
 		}
 
 		if e.key >= n.entries[at].key {
-			child, err = bpt.nodeRef(n.children[at+1])
+			child, err = bpt.nodeRef(n.children[at+1]) //TODO: After no longer in use, unpin
 			if err != nil {
 				return false, err
 			}

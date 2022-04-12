@@ -2,6 +2,7 @@ package kv
 
 import "fmt"
 
+//FX: suggestion: rename to findSequentialFreeID?
 func findSequentialFreeSpace(free []uint64, n int) (id uint64, remaining []uint64, err error) {
 	if len(free) <= n {
 		return 0, free, fmt.Errorf("not enough pages in free list")
@@ -27,6 +28,8 @@ func findSequentialFreeSpace(free []uint64, n int) (id uint64, remaining []uint6
 }
 
 func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
+	// Bridge between buffer pool and bplustree
+	//fmt.Printf("Give me node wiht id=%d, length=%d\n", id, len(tree.nodes))
 	n, found := tree.nodes[id]
 	if found {
 		return n, nil
@@ -47,6 +50,17 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 
 	pid, rem, err := findSequentialFreeSpace(tree.meta.free, n)
 	tree.meta.free = rem
+
+
+	//TODO: 
+	// Since allocate(), this page(node) doesn't exist. Create a new node
+	// with the given pid and pass reference to buffer pool (or copy by value), if we cont.
+	// using findseq...()
+
+	//Otherwise, if necessary, store the ID of the next node being created
+	//in the meta of the tree and retrieve it from there for page creation (need to pass ID)
+
+	// Or easiest: let the bufferpool give you a new node
 
 	// ask for more pages to the buffer pool
 	if err != nil {

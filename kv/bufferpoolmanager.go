@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const BufferPoolCapacity = 4
+const BufferPoolCapacity = 10
 const debug_buffer = false
 
 type BufferPoolManager struct {
@@ -13,7 +13,7 @@ type BufferPoolManager struct {
 	pool           [BufferPoolCapacity]*node
 	replacePolicy  *ClockPolicy
 	freeFramesList []NodeID
-	nodesTable     map[NodeID]NodeID
+	nodesTable     map[NodeID]NodeID // maps nodeID <-> FrameID of buffer pool
 }
 
 func NewBufferPoolManager(DiskManager DiskManager, clock *ClockPolicy) *BufferPoolManager {
@@ -35,7 +35,7 @@ func (bpm *BufferPoolManager) GetNewNode() *node {
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
 		node := bpm.pool[*frameID]
-		if node.IsDirty() {
+		if node.IsDirty(){
 			// save to disk
 			bpm.diskManager.WriteNode(node)
 			node.dirty = false
@@ -58,7 +58,7 @@ func (bpm *BufferPoolManager) GetNewNode() *node {
 	}
 
 	// allocate new node
-	id := bpm.diskManager.AllocateNode()
+	id := bpm.diskManager.AllocateNode() //TODO/FX: Here, the disk manager gives you a "new node id"
 	degree := uint8(70)
 //	node := &node{id: , data: [NodeDataSize]byte{}, dirty: false, pinCounter: 1}
 
@@ -88,7 +88,7 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, dirty bool) error {
 	frameID, found := bpm.nodesTable[nodeID]
 
 	if !found {
-		return errors.New("Node doesn't exist")
+		return errors.New("Node doesn't exist in buffer pool")
 	}
 	node := bpm.pool[frameID]
 
@@ -107,14 +107,6 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, dirty bool) error {
 	}
 
 	return nil
-}
-
-func (bpm *BufferPoolManager) PrintNodes() {
-	fmt.Println("------------------------------------")
-	fmt.Println("Nodes in Buffer Pool:")
-	for _, node := range bpm.pool {
-		fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
-	}
 }
 
 func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) *node {
@@ -209,7 +201,7 @@ func (bpm *BufferPoolManager) FlushNode(nodeID NodeID) bool {
 	frameID, found := bpm.nodesTable[nodeID]
 	if found {
 		node := bpm.pool[frameID]
-		bpm.diskManager.WriteNode(node)
+		bpm.diskManager.WriteNode(node) //TODO: Add here marshalling
 		node.dirty = false //written to disk, i.e. up to date
 		return true
 	}
@@ -219,5 +211,21 @@ func (bpm *BufferPoolManager) FlushNode(nodeID NodeID) bool {
 func (bpm *BufferPoolManager) FlushAllNodes() {
 	for id := range bpm.nodesTable {
 		bpm.FlushNode(id)
+	}
+}
+
+func (bpm *BufferPoolManager) PrintPool() {
+	fmt.Println("------------------------------------")
+	fmt.Println("Nodes in Buffer Pool:")
+	for _, node := range bpm.pool {
+		fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
+	}
+}
+
+func (bpm *BufferPoolManager) PrintTable() {
+	fmt.Println("------------------------------------")
+	fmt.Println("Nodes in Table:")
+	for _, i := range bpm.nodesTable {
+		fmt.Printf("i=%d, node=%v\n", i, *bpm.pool[i])
 	}
 }

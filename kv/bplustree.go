@@ -44,7 +44,7 @@ func (bpt *BPlusTree) Insert(key Key, value Value) (success bool, err error) {
 		return success, err
 	}
 
-	bpt.meta.dirty = true
+	bpt.meta.dirty = true //This a global dirty read
 
 	if success {
 		bpt.meta.size++
@@ -56,6 +56,9 @@ func (bpt *BPlusTree) Insert(key Key, value Value) (success bool, err error) {
 
 func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
+	//TODO/FX: If we want to be consistent with findsequentialfreespace,
+	// then this needs to add the removed node back to the list
+	
 	if node, at, found, err := bpt.search(bpt.root, key); err != nil {
 		return nil, err
 	} else if found {
@@ -92,7 +95,7 @@ func (bpt *BPlusTree) search(n *node, key Key) (child *node, at int, found bool,
 	if found {
 		at++
 	}
-	child, err = bpt.nodeRef(n.children[at])
+	child, err = bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
 	if err != nil {
 		return nil, 0, false, err
 	}
