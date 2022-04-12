@@ -81,7 +81,7 @@ func (bpm *BufferPoolManager) GetFrameID() (*NodeID, bool) {
 	return (*bpm.replacePolicy).Victim(), false
 }
 
-func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, dirty bool) error {
+func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID) error {
 	// Unpin node by decreasing counter.
 	// If isDirty is true, then set dirtybit to true
 
@@ -102,9 +102,9 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, dirty bool) error {
 		(*bpm.replacePolicy).Unpin(frameID)
 	}
 
-	if node.IsDirty() || dirty {
-		node.dirty = true
-	}
+	// if node.IsDirty() || dirty {
+	// 	node.dirty = true
+	// }
 
 	return nil
 }

@@ -21,7 +21,7 @@ func TestBufferPoolManager(t *testing.T) {
 
 	// Unpin node with id=2 and set dirty bit
 	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(1))
-	AssertEqual(t, bpm.UnpinNode(2, true), nil) //if not nill => error
+	AssertEqual(t, bpm.UnpinNode(2), nil) //if not nill => error
 	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(0))
 	AssertEqual(t, (*bpm.pool[2]).IsDirty(), true)
 
@@ -40,14 +40,14 @@ func TestBufferPoolManager(t *testing.T) {
 	AssertEqual(t, getClockSize(), 0)
 
 	// Node 200 doesn't exist, shouldn't return nil but an error instead
-	AssertNotEqual(t, bpm.UnpinNode(200, false), nil)
+	AssertNotEqual(t, bpm.UnpinNode(200), nil)
 
 	// Pool is ful, also all nodes are in use, so nothing to evict
 	var nilnode *node
 	AssertEqual(t, bpm.GetNewNode(), nilnode)
 
 	// Put node(id=1) into the clock
-	bpm.UnpinNode(1, false)
+	bpm.UnpinNode(1)
 	AssertEqual(t, getClockSize(), 1)
 
 	// Now fetch it (from buffer pool) (and hence remove it from the clock again)
@@ -62,10 +62,10 @@ func TestBufferPoolManager(t *testing.T) {
 	(*bpm.pool[1]).setPinCounter(1) //back to 1
 
 	// Unpin all nodes with id 0,1,4,3 (remember, node id=2 got replaced with id=4)
-	AssertEqual(t, bpm.UnpinNode(0, false), nil)
-	AssertEqual(t, bpm.UnpinNode(1, false), nil)
-	AssertEqual(t, bpm.UnpinNode(4, false), nil)
-	AssertEqual(t, bpm.UnpinNode(3, false), nil)
+	AssertEqual(t, bpm.UnpinNode(0), nil)
+	AssertEqual(t, bpm.UnpinNode(1), nil)
+	AssertEqual(t, bpm.UnpinNode(4), nil)
+	AssertEqual(t, bpm.UnpinNode(3), nil)
 	AssertEqual(t, getClockSize(), 4) //should be 4 by now
 
 	//Replace our old nodes 1...4\{2} with 5...8 with new ones
@@ -76,8 +76,8 @@ func TestBufferPoolManager(t *testing.T) {
 	bpm.GetNewNode() //8
 
 	//Unpin node 6,7
-	AssertEqual(t, bpm.UnpinNode(6, false), nil)
-	AssertEqual(t, bpm.UnpinNode(7, false), nil)
+	AssertEqual(t, bpm.UnpinNode(6), nil)
+	AssertEqual(t, bpm.UnpinNode(7), nil)
 
 	// Test fetch from disk
 	bpm.FetchNode(1)
@@ -87,14 +87,14 @@ func TestBufferPoolManager(t *testing.T) {
 
 	// Try to delete node that's in use
 	AssertNotEqual(t, bpm.DeleteNode(2), nil) // will not work and throw error
-	bpm.UnpinNode(2, false)
+	bpm.UnpinNode(2)
 	//Now it should work
 	AssertEqual(t, bpm.DeleteNode(2), nil)
 
 	AssertEqual(t, bpm.FetchNode(200), nilnode)  // node ID doesn't exist
 	AssertNotEqual(t, bpm.FetchNode(2), nilnode) // node used to exist.. and still is in buffer pool... *feature* (should be AsserEqual for it to be correct)
 
-	bpm.UnpinNode(2, false)
+	bpm.UnpinNode(2)
 
 	bpm.FlushNode(5) // Check visually....
 	bpm.FlushAllNodes()
