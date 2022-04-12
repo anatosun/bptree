@@ -40,7 +40,10 @@ func (bpt *BPlusTree) insertLeaf(n *node, e entry) (bool, error) {
 		return false, nil
 	}
 
-	n.insertEntryAt(at, e)
+	err := n.insertEntryAt(at, e)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
