@@ -26,10 +26,10 @@ func TestInit(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-//	t.Logf("inserting %d random keys", size)
+	//	t.Logf("inserting %d random keys", size)
 
 	for i := 0; i < size; i++ {
-//		t.Logf("inserting %d", array[i])
+		//		t.Logf("inserting %d", array[i])
 		_, err := store.Insert(Key(array[i]), Value{byte(array[i])})
 		if err != nil {
 			t.Errorf("while inserting to kv store(%d): %v", i, err)
