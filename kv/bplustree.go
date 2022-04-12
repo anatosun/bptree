@@ -4,6 +4,7 @@
 package kv
 
 type BPlusTree struct {
+	bpm	   *BufferPoolManager
 	degree uint8
 	nodes  map[uint64]*node // node cache to avoid IO
 	meta   metadata         // metadata about bpt structure
@@ -14,7 +15,13 @@ const preaollocation = 1000 * 1000
 
 func New(degree uint8) storage {
 
+
+	clock := NewClockPolicy(BufferPoolCapacity)
+	disk := NewDiskManagerMock()
+	bpm := NewBufferPoolManager(disk, clock)
+
 	bpt := &BPlusTree{degree: degree}
+	bpt.bpm = bpm
 	bpt.nodes = make(map[uint64]*node)
 	bpt.root = newNode(1, degree)
 	bpt.nodes[bpt.root.id] = bpt.root
