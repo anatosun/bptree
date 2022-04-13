@@ -9,7 +9,7 @@ import (
 var store *BPlusTree
 var array []int
 
-const size = 1000
+const size = 1000000
 
 func TestInit(t *testing.T) {
 	store = New()
