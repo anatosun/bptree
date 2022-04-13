@@ -5,12 +5,13 @@
 package kv
 
 import (
-	"errors"
 	"fmt"
+	"os"
 )
 
 //DiskMaxNumNodes sets the disk capacity
-const DiskMaxNodesCapacity = 10000000
+const DiskMaxNodesCapacity = 50000000
+const dataFolder = "./../data/"
 
 // DiskManager is responsible for interacting with disk
 // type DiskManager interface {
@@ -28,18 +29,51 @@ type DiskManager struct {
 
 //ReadNode reads a node from nodes
 func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
-	if node, ok := d.nodes[nodeID]; ok {
-		return node, nil
-	}
 
-	return nil, errors.New("Node not found")
+	// REAL DISK
+	loc := dataFolder + fmt.Sprint(nodeID)
+
+	dat, err := os.ReadFile(loc)
+
+    if err != nil {
+    	return nil, err
+    }
+
+    degree := uint8(3)
+	node := newNode(uint64(nodeID), degree)
+
+	node.UnmarshalBinary(dat)
+	return node, nil
+
+	//MOCK DISK
+	// if node, ok := d.nodes[nodeID]; ok {
+	// 	return node, nil
+	// }
+
+	// return nil, fmt.Errorf("Node not found")
+
+	
 }
 
 //WriteNode writes a node in memory to nodes
 func (d *DiskManager) WriteNode(node *node) error {
+
+	bin, err := node.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	loc := dataFolder + fmt.Sprint(node.getID())
+
+    err = os.WriteFile(loc, bin, 0644)
+    if err != nil {
+    	return err
+    }
+
 	d.nodes[NodeID(node.id)] = node
 	return nil
 }
+
 
 //AllocateNode allocates one more node
 func (d *DiskManager) AllocateNode() *NodeID {
@@ -62,10 +96,12 @@ func NewDiskManager(fromNodeID NodeID) *DiskManager {
 }
 
 //Print nodes
+//Depracted
 func (d *DiskManager) PrintNodes() {
-	fmt.Println("------------------------------------")
-	fmt.Println("Nodes on disk:")
-	for _, node := range d.nodes {
-		fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
-	}
+	fmt.Println("Depracted")
+	// fmt.Println("------------------------------------")
+	// fmt.Println("Nodes on disk:")
+	// for _, node := range d.nodes {
+	// 	fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
+	// }
 }

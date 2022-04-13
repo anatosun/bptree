@@ -171,6 +171,7 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) (*node, error) {
 	}
 
 	node, err := bpm.diskManager.ReadNode(nodeID)
+
 	if err != nil {
 		return nil, err
 	}
