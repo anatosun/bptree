@@ -25,7 +25,7 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 			return node2, nil
 		}
 
-		return nil, fmt.Errorf("Node not found")
+		return nil, fmt.Errorf("node not found")
 	}
 
 	// REAL DISK
@@ -73,7 +73,7 @@ func (d *DiskManager) WriteNode(node *node) error {
 //AllocateNode allocates one more node
 func (d *DiskManager) AllocateNode() (NodeID, error) {
 	if d.numNode == DiskMaxNodesCapacity-1 {
-		return 0, fmt.Errorf("Couldn't allocate new node")
+		return 0, fmt.Errorf("couldn't allocate new node")
 	}
 	nodeID := NodeID(d.numNode)
 	d.numNode = d.numNode + 1
@@ -86,7 +86,7 @@ func (d *DiskManager) DeallocateNode(nodeID NodeID) error {
 
 	e := os.Remove(loc)
 	if e != nil {
-		return fmt.Errorf("Couldn't delete node")
+		return fmt.Errorf("couldn't delete node")
 	}
 	return nil
 }
