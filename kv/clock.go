@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-const debug bool = false
 
 type ClockPolicy struct {
 	clock *Ring
@@ -30,49 +29,29 @@ func (c *ClockPolicy) Unpin(id NodeID) {
 }
 
 // Victim removes the victim frame as defined by the replacement policy
-func (c *ClockPolicy) Victim() *NodeID {
+func (c *ClockPolicy) Victim() (NodeID, error) {
 
 	if c.clock.IsEmpty() {
-		return nil
+		return 0, fmt.Errorf("No node to evict, all nodes are in use")
 	}
 
-	var victimFrameID *NodeID
-
-	if debug {
-		fmt.Println("Running victim....")
-	}
+	var victimFrameID NodeID
 
 	for {
 		currentNode := c.clock.Next()
-
-		if debug {
-			fmt.Printf("node: key=%d ; value=%t \n", currentNode.key.(int), currentNode.value.(bool))
-		}
 
 		if currentNode.value.(bool) {
 			currentNode.value = false
 		} else {
 			key, _ := currentNode.key.(NodeID)
 			frameID := key
-			victimFrameID = &frameID
-
-			if debug {
-				fmt.Printf("returning node: key=%d ; value=%t ; pointer of ring=%d\n", currentNode.key.(int), currentNode.value.(bool), c.clock.pointer)
-			}
+			victimFrameID = frameID
 
 			c.clock.Remove(currentNode.key)
 
-			if debug {
-				fmt.Printf("pointer of ring after removal=%d\n", c.clock.pointer)
-			}
-
-			return victimFrameID
+			return victimFrameID, nil
 		}
 
 	}
-
-	if debug {
-		fmt.Println("Nothing returned... ending victim")
-	}
-	return nil
+	return 0, fmt.Errorf("This error will never raise...")
 }

@@ -14,8 +14,12 @@ func TestClock(t *testing.T) {
 	//clock.clock.Print()
 
 	AssertEqual(t, clock.Size(), 10)
-	AssertEqual(t, *clock.Victim(), NodeID(1))
-	AssertEqual(t, *clock.Victim(), NodeID(2))
+
+	victim, _ := (*clock).Victim()
+	AssertEqual(t, victim, NodeID(1))
+
+	victim, _ = (*clock).Victim()
+	AssertEqual(t, victim, NodeID(2))
 
 	AssertEqual(t, clock.Pin(NodeID(3)), true) // remove from clock
 	AssertEqual(t, clock.Pin(NodeID(4)), true)
@@ -26,11 +30,14 @@ func TestClock(t *testing.T) {
 	clock.Unpin(NodeID(4)) // removed before, add again
 
 	//clock.clock.Print()
+	victim, _ = (*clock).Victim()
+	AssertEqual(t, victim, NodeID(5))
 
-	AssertEqual(t, *clock.Victim(), NodeID(5))
-	AssertEqual(t, *clock.Victim(), NodeID(6))
+	victim, _ = (*clock).Victim()
+	AssertEqual(t, victim, NodeID(6))
 
-	AssertEqual(t, *clock.Victim(), NodeID(7))
+	victim, _ = (*clock).Victim()
+	AssertEqual(t, victim, NodeID(7))
 
 	//clock.clock.Print()
 }
