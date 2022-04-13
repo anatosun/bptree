@@ -12,6 +12,7 @@ import (
 //DiskMaxNumNodes sets the disk capacity
 const DiskMaxNodesCapacity = 50000000
 const dataFolder = "./../data/"
+const avoidStoringToDisk = false
 
 // DiskManager is responsible for interacting with disk
 // type DiskManager interface {
@@ -30,6 +31,25 @@ type DiskManager struct {
 //ReadNode reads a node from nodes
 func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 
+	if avoidStoringToDisk {
+		//MOCK DISK IN MEMORY
+		if node2, ok := d.nodes[nodeID]; ok {
+			// node2.dirty = true
+
+			// n1s := fmt.Sprintf("%v", node)
+			// n2s := fmt.Sprintf("%v", node2)
+			// if n1s != n2s {
+			// 	fmt.Printf("disk  =%v\n",n1s)
+			// 	fmt.Printf("memory=%v\n",n2s)
+			// 	fmt.Println("MISMATCH READcING")
+			// }
+			
+			return node2, nil
+		}
+
+		return nil, fmt.Errorf("Node not found")
+	}
+
 	// REAL DISK
 	loc := dataFolder + fmt.Sprint(nodeID)
 
@@ -43,34 +63,20 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 
 	node.UnmarshalBinary(dat)
 
-	
-
 	return node, nil
 
-	// //MOCK DISK
-	// if node2, ok := d.nodes[nodeID]; ok {
-	// 	node2.dirty = true
-
-	// 	n1s := fmt.Sprintf("%v", node)
-	// 	n2s := fmt.Sprintf("%v", node2)
-	// 	if n1s != n2s {
-	// 		fmt.Printf("disk  =%v\n",n1s)
-	// 		fmt.Printf("memory=%v\n",n2s)
-	// 		fmt.Println("MISMATCH READcING")
-	// 	}
-		
-	// 	return node, nil
-	// }
-
-	// return nil, fmt.Errorf("Node not found")
-
-	
 }
 
 //WriteNode writes a node in memory to nodes
 func (d *DiskManager) WriteNode(node *node) error {
 
+	if avoidStoringToDisk {
+		//MOCK IN MEMORY
+		d.nodes[NodeID(node.id)] = node
+		return nil
+	}
 
+	// REAL DISK
 	bin, err := node.MarshalBinary()
 	if err != nil {
 		return err
@@ -83,7 +89,6 @@ func (d *DiskManager) WriteNode(node *node) error {
     	return err
     }
 
-	d.nodes[NodeID(node.id)] = node
 	return nil
 }
 
