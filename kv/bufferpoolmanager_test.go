@@ -98,5 +98,4 @@ func TestBufferPoolManager(t *testing.T) {
 	AssertEqual(t, bpm.UnpinNode(NodeID(5), false), nil)
 	AssertEqual(t, bpm.UnpinNode(NodeID(4), false), nil)
 	AssertEqual(t, getClockSize(), 5)
-
 }

@@ -42,26 +42,28 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 			node.dirty = false
 			node.pinCounter = 0
 
-		} else {
-			// // let's still save it to disk
-			// // since we're currently only emulating the disk
-			// bpm.diskManager.WriteNode(node)
-			// node.dirty = false
-			// node.pinCounter = 0
 		}
+		// else {
+		// 	// // let's still save it to disk
+		// 	// // since we're currently only emulating the disk
+		// 	// bpm.diskManager.WriteNode(node)
+		// 	// node.dirty = false
+		// 	// node.pinCounter = 0
+		// }
 
 		//remove node from frame
 		delete(bpm.nodesTable, NodeID(node.id))
 
 		//fmt.Println("Node not from free list")
-	} else {
-		//fmt.Println("Node from free list")
 	}
+	// else {
+	// 	//fmt.Println("Node from free list")
+	// }
 
 	// allocate new node
 	newNodeID, err := bpm.diskManager.AllocateNode()
 	if err != nil {
-		return 0, fmt.Errorf("Couldn't allocate new node")
+		return 0, fmt.Errorf("couldn't allocate new node")
 	}
 	//node := &node{id: , data: [NodeDataSize]byte{}, dirty: false, pinCounter: 1}
 
@@ -103,7 +105,7 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, isDirty bool) error {
 	frameID, found := bpm.nodesTable[nodeID]
 
 	if !found {
-		return errors.New("Node doesn't exist in buffer pool")
+		return errors.New("node doesn't exist in buffer pool")
 	}
 	node := bpm.pool[frameID]
 
@@ -136,9 +138,6 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) (*node, error) {
 		(*bpm.replacePolicy).Pin(frameID) // remove node from clock
 		return node, nil
 
-		if debug_buffer {
-			fmt.Printf("nodeID=%d,frameID=%d exists in buffer pool\n", nodeID, frameID)
-		}
 	} else {
 		// Node doesn't exist in buffer pool
 		if debug_buffer {
@@ -173,10 +172,11 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) (*node, error) {
 		delete(bpm.nodesTable, NodeID(node.id))
 
 		//fmt.Println("Node not from free list")
-	} else {
-		//fmt.Println("Node from free list")
-
 	}
+	//  else {
+	// 	//fmt.Println("Node from free list")
+
+	// }
 
 	node, err := bpm.diskManager.ReadNode(nodeID)
 
@@ -196,13 +196,13 @@ func (bpm *BufferPoolManager) DeleteNode(nodeID NodeID) error {
 	frameID, found := bpm.nodesTable[nodeID]
 
 	if !found {
-		return errors.New("Node doesn't exist")
+		return errors.New("node doesn't exist")
 	}
 
 	node := bpm.pool[frameID]
 
 	if !node.hasZeroPins() {
-		return errors.New("Node is still in use, cannot be deleted")
+		return errors.New("node is still in use, cannot be deleted")
 	}
 
 	delete(bpm.nodesTable, NodeID(node.id))

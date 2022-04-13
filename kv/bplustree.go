@@ -3,9 +3,7 @@
 // binary data and value is uint64.
 package kv
 
-import (
 // "os"
-)
 
 type BPlusTree struct {
 	// bpm      *BufferPoolManager
@@ -19,7 +17,8 @@ type BPlusTree struct {
 
 const preaollocation = 1000 * 1000
 
-func New() *BPlusTree {
+// returns a new B+ tree with the optimal parameters
+func New() storage {
 
 	clock := NewClockPolicy(BufferPoolCapacity)
 	disk := NewDiskManager()
@@ -61,6 +60,7 @@ func New() *BPlusTree {
 	return bpt
 }
 
+// serves to put a key/value pair in the B+ tree
 func (bpt *BPlusTree) Insert(key Key, value Value) (success bool, err error) {
 
 	e := entry{key: key, value: value}
@@ -79,6 +79,8 @@ func (bpt *BPlusTree) Insert(key Key, value Value) (success bool, err error) {
 	return success, nil
 }
 
+// removes a given key and its entry in the B+ tree
+// this deletion is lazy, it only deletes the entry in the node without rebaleasing the tree
 func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
 	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
@@ -106,6 +108,7 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
 }
 
+// search for a given key among the nodes of the B+tree
 func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 
 	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
@@ -124,8 +127,10 @@ func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 
 }
 
+// returns the length of the B+ tree
 func (bpt *BPlusTree) Len() int { return int(bpt.meta.size) }
 
+// recursively search for a key in the node and its children
 func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child NodeID, at int, found bool, err error) {
 
 	node, err := bpt.bpm.FetchNode(nodeID)
@@ -151,6 +156,7 @@ func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child NodeID, at int, foun
 	return bpt.search(childID, key)
 }
 
+// split the given three nodes
 func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 
 	p, err := bpt.bpm.FetchNode(pID)
@@ -192,6 +198,7 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 	return nil
 }
 
+// split the (internal) node into the given three nodes
 func (bpt *BPlusTree) splitNode(left, middle, right *node, i int) error {
 	parentKey := middle.entries[bpt.fanout-1]
 	right.entries = make([]entry, bpt.fanout-1)
@@ -211,6 +218,7 @@ func (bpt *BPlusTree) splitNode(left, middle, right *node, i int) error {
 	return nil
 }
 
+// split the leaf into the given three nodes
 func (bpt *BPlusTree) splitLeaf(left, middle, right *node, i int) error {
 	right.next = middle.next
 	right.prev = middle.id
@@ -232,6 +240,7 @@ func (bpt *BPlusTree) splitLeaf(left, middle, right *node, i int) error {
 
 }
 
+// checks if the slices do not exceed the given bound, otherwise raises an error
 func (bpt *BPlusTree) validate(nodes []*node) error {
 
 	for _, n := range nodes {
@@ -252,10 +261,10 @@ func (bpt *BPlusTree) validate(nodes []*node) error {
 	return nil
 }
 
+// completes the value of both the fanout and the order
 func (bpt *BPlusTree) fillDegrees() error {
 
-	// bpt.fanout = uint64((os.Getpagesize() - nodeHeaderLen() - 4) / (2 * (18 + 2 + 8)))
-	// bpt.order = uint64(os.Getpagesize() - nodeHeaderLen()/(2*(8+8+8)))
+	// computed by hand on a page size of 4096
 	bpt.fanout = uint64(60)
 	bpt.order = uint64(60)
 

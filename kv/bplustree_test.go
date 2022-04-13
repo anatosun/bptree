@@ -6,7 +6,7 @@ import (
 	// "fmt"
 )
 
-var store *BPlusTree
+var store storage
 var array []int
 
 const size = 10000000
@@ -48,30 +48,6 @@ func TestInsert(t *testing.T) {
 
 }
 
-func TestRemove(t *testing.T) {
-
-	if store.Len() == 0 {
-		TestInsert(t)
-	}
-
-	for i := 0; i < len(array); i++ {
-		_, err := store.Remove(Key(array[i]))
-		if err != nil {
-			t.Errorf("while removing %d: %v", array[i], err)
-			t.FailNow()
-		}
-
-	}
-
-	expected := 0
-	actual := int(store.Len())
-
-	if expected != actual {
-		t.Errorf("expected %d, got %d", expected, actual)
-		t.FailNow()
-	}
-}
-
 func TestUpdate(t *testing.T) {
 
 	if store.Len() == 0 {
@@ -97,6 +73,30 @@ func TestUpdate(t *testing.T) {
 	}
 
 	expected := len(array)
+	actual := int(store.Len())
+
+	if expected != actual {
+		t.Errorf("expected %d, got %d", expected, actual)
+		t.FailNow()
+	}
+}
+
+func TestRemove(t *testing.T) {
+
+	if store.Len() == 0 {
+		TestInsert(t)
+	}
+
+	for i := 0; i < len(array); i++ {
+		_, err := store.Remove(Key(array[i]))
+		if err != nil {
+			t.Errorf("while removing %d: %v", array[i], err)
+			t.FailNow()
+		}
+
+	}
+
+	expected := 0
 	actual := int(store.Len())
 
 	if expected != actual {

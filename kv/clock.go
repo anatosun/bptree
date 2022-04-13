@@ -31,7 +31,7 @@ func (c *ClockPolicy) Unpin(id NodeID) {
 func (c *ClockPolicy) Victim() (NodeID, error) {
 
 	if c.clock.IsEmpty() {
-		return 0, fmt.Errorf("No node to evict, all nodes are in use")
+		return 0, fmt.Errorf("no node to evict, all nodes are in use")
 	}
 
 	var victimFrameID NodeID
@@ -52,5 +52,4 @@ func (c *ClockPolicy) Victim() (NodeID, error) {
 		}
 
 	}
-	return 0, fmt.Errorf("This error will never raise...")
 }
