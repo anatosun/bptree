@@ -134,7 +134,3 @@ func TestBufferPoolManager(t *testing.T) {
 	// // bpm.FlushAllNodes()
 
 }
-
-func dummyfmt2() {
-	fmt.Println("x")
-}
