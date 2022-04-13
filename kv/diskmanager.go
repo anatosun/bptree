@@ -8,7 +8,7 @@ import (
 //DiskMaxNumNodes sets the disk capacity
 const DiskMaxNodesCapacity = 50000000
 const dataFolder = "./../data/"
-const avoidStoringToDisk = true
+const avoidStoringToDisk = false
 
 //DiskManager is a memory mock for disk manager
 type DiskManager struct {
