@@ -25,11 +25,6 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 			return false, err_fetching_2
 		}
 
-		_, err := bpt.allocate_old(2)
-		if err != nil {
-			return false, err
-		}
-
 		newRoot := n1
 		rightSibling := n2
 		oldRoot := bpt.root
