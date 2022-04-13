@@ -6,7 +6,7 @@ import (
 	// "fmt"
 )
 
-var store *BPlusTree
+var store storage
 var array []int
 
 const size = 10000000
