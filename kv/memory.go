@@ -80,6 +80,20 @@ func (tree *BPlusTree) allocate_old(n int) ([]*node, error) {
 	return nodes, nil
 }
 
+func (tree *BPlusTree) allocate() (*NodeID, error) {
+	id, err := tree.bpm.GetNewNode()
+	if err != nil {
+		return nil, err
+	}
+
+	//Current fix until everything is implemented
+	tree.nodes[uint64(*id)], _ = tree.bpm.FetchNode(*id)
+	tree.bpm.UnpinNode(*id)
+
+	return id, nil
+}
+
+
 // write queries the bufferpool manager to write the node to disk
 
 // uncomment this function once the bufferpool implements the proper methods

@@ -3,12 +3,13 @@ package kv
 import (
 	"math/rand"
 	"testing"
+	// "fmt"
 )
 
 var store *BPlusTree
 var array []int
 
-const size = 10000000
+const size = 1000
 
 func TestInit(t *testing.T) {
 	store = New()
@@ -80,6 +81,7 @@ func TestUpdate(t *testing.T) {
 	for i := 0; i < len(array); i++ {
 		r := rand.Int()
 		if r != array[i] {
+
 			success, err := store.Insert(Key(array[i]), Value{byte(array[i])})
 
 			if err != nil {

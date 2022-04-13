@@ -23,7 +23,7 @@ func (e *entry) MarshalEntry() ([]byte, error) {
 	binary.LittleEndian.PutUint64(buf[0:8], uint64(e.key))
 	copy(buf[8:], e.value[:])
 	if len(buf) != entryLen() {
-		return nil, &BufferOverflowError{Max: entryLen, Cursor: len(buf)}
+		return nil, &BufferOverflowError{Max: entryLen(), Cursor: len(buf)}
 	}
 	return buf, nil
 }

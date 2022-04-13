@@ -9,25 +9,37 @@ import (
 
 type BPlusTree struct {
 	// bpm      *BufferPoolManager
-	order  uint64           // number of entries per leaf
-	fanout uint64           // number of children per internal node
-	nodes  map[uint64]*node // node cache to avoid IO
-	meta   metadata
-	root   *node
+	order   uint64           // number of entries per leaf
+	fanout  uint64           // number of children per internal node
+	nodes   map[uint64]*node // node cache to avoid IO
+	meta    metadata
+	root    *node
+	bpm 	*BufferPoolManager
 }
 
 const preaollocation = 1000 * 1000
 
 func New() *BPlusTree {
 
-	// clock := NewClockPolicy(BufferPoolCapacity)
-	// disk := NewDiskManager(0)
-	// bpm := NewBufferPoolManager(disk, clock)
-
+	clock := NewClockPolicy(BufferPoolCapacity)
+	disk := NewDiskManager()
+	bpm := NewBufferPoolManager(disk, clock)
 	bpt := &BPlusTree{}
-	// bpt.bpm = bpm
+	bpt.bpm = bpm
 	bpt.nodes = make(map[uint64]*node)
-	bpt.root = newNode(1)
+
+	// bpt.root = newNode(1)
+	initNodeID, _ := bpt.bpm.GetNewNode()
+	initNode, err := bpt.bpm.FetchNode(*initNodeID) //Removes it from clock
+	
+	if err != nil {
+		panic("Couldn't init B+Tree")
+	}
+
+	bpt.root = initNode
+	//fmt.Printf("new root=%v\nold root=%v\n", initNode, bpt.root)
+
+
 	bpt.nodes[bpt.root.id] = bpt.root
 
 	bpt.meta = metadata{
@@ -45,6 +57,9 @@ func New() *BPlusTree {
 	}
 
 	bpt.computeDegree(4096)
+
+	//Usually, you would unpin now every fetched node. However, the root should always stay in memory
+	// So nothing to do here.
 
 	return bpt
 }
@@ -72,10 +87,19 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 	//TODO/FX: If we want to be consistent with findsequentialfreespace,
 	// then this needs to add the removed node back to the list
 
-	if node, at, found, err := bpt.search(bpt.root, key); err != nil {
+	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
 		return nil, err
 	} else if found {
+		node, err := bpt.bpm.FetchNode(nodeID)
+
+		if err != nil {
+			bpt.bpm.UnpinNode(nodeID)
+			return nil, err
+		}
+
 		e, err := node.deleteEntryAt(at)
+		bpt.bpm.UnpinNode(nodeID)
+
 		if err != nil {
 			// attempt to unpin node before returning the error
 			// bpt.bpm.UnpinNode(node.id)
@@ -93,11 +117,14 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
 func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 
-	if n, at, found, err := bpt.search(bpt.root, key); err != nil {
+	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
 		return nil, err
 	} else if found {
-		// unpin previous before returning value
-		// err = bpt.bpm.UnpinNode(n.id)
+		n, err := bpt.bpm.FetchNode(nodeID)
+		if err != nil {
+			bpt.bpm.UnpinNode(nodeID)
+			return nil, err
+		}
 		return &n.entries[at].value, err
 	}
 
@@ -107,26 +134,29 @@ func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 
 func (bpt *BPlusTree) Len() int { return int(bpt.meta.size) }
 
-func (bpt *BPlusTree) search(n *node, key Key) (child *node, at int, found bool, err error) {
-	at, found = n.search(key)
+func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child NodeID, at int, found bool, err error) {
 
-	if n.isLeaf() {
-		return n, at, found, nil
+	node, err := bpt.bpm.FetchNode(nodeID)
+	if err != nil {
+		bpt.bpm.UnpinNode(nodeID)
+		return 0, 0, false, err
+	}
+
+	at, found = node.search(key)
+
+	if node.isLeaf() {
+		bpt.bpm.UnpinNode(nodeID)
+		return nodeID, at, found, nil
 	}
 
 	if found {
 		at++
 	}
-	child, err = bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
-	if err != nil {
-		return nil, 0, false, err
-	}
-	// unpin previous before iterating over the next
-	// err = bpt.bpm.UnpinNode(n.id)
-	// if err != nil {
-	// 	return n, at, false, err
-	// }
-	return bpt.search(child, key)
+	childID := NodeID(node.children[at])
+
+	bpt.bpm.UnpinNode(nodeID)
+
+	return bpt.search(childID, key)
 }
 
 func (bpt *BPlusTree) split(p, n, sibling *node, i int) error {
