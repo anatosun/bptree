@@ -152,39 +152,39 @@ func (bpt *BPlusTree) split(p, n, sibling *node, i int) error {
 	return nil
 }
 
-func (bpt *BPlusTree) splitNode(p, n, sibling *node, i int) error {
-	parentKey := n.entries[bpt.fanout-1]
-	sibling.entries = make([]entry, bpt.fanout-1)
-	copy(sibling.entries, n.entries[:bpt.fanout])
-	n.entries = n.entries[bpt.fanout:]
-	sibling.children = make([]uint64, bpt.fanout)
-	copy(sibling.children, n.children[:bpt.fanout])
-	n.children = n.children[bpt.fanout:]
-	err := p.insertChildAt(i, sibling)
+func (bpt *BPlusTree) splitNode(left, middle, right *node, i int) error {
+	parentKey := middle.entries[bpt.fanout-1]
+	right.entries = make([]entry, bpt.fanout-1)
+	copy(right.entries, middle.entries[:bpt.fanout])
+	middle.entries = middle.entries[bpt.fanout:]
+	right.children = make([]uint64, bpt.fanout)
+	copy(right.children, middle.children[:bpt.fanout])
+	middle.children = middle.children[bpt.fanout:]
+	err := left.insertChildAt(i, right)
 	if err != nil {
 		return err
 	}
-	err = p.insertEntryAt(i, parentKey)
+	err = left.insertEntryAt(i, parentKey)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (bpt *BPlusTree) splitLeaf(p, n, sibling *node, i int) error {
-	sibling.next = n.next
-	sibling.prev = n.id
-	n.next = sibling.id
+func (bpt *BPlusTree) splitLeaf(left, middle, right *node, i int) error {
+	right.next = middle.next
+	right.prev = middle.id
+	middle.next = right.id
 
-	sibling.entries = make([]entry, bpt.order-1)
-	copy(sibling.entries, n.entries[bpt.order:])
-	n.entries = n.entries[:bpt.order]
+	right.entries = make([]entry, bpt.order-1)
+	copy(right.entries, middle.entries[bpt.order:])
+	middle.entries = middle.entries[:bpt.order]
 
-	err := p.insertChildAt(i+1, sibling)
+	err := left.insertChildAt(i+1, right)
 	if err != nil {
 		return err
 	}
-	err = p.insertEntryAt(i, sibling.entries[0])
+	err = left.insertEntryAt(i, right.entries[0])
 	if err != nil {
 		return err
 	}
