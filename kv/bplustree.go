@@ -4,7 +4,7 @@
 package kv
 
 import (
-	"os"
+	// "os"
 )
 
 type BPlusTree struct {
@@ -40,7 +40,7 @@ func New() *BPlusTree {
 	//fmt.Printf("new root=%v\nold root=%v\n", initNode, bpt.root)
 
 
-	bpt.nodes[bpt.root.id] = bpt.root
+	bpt.nodes[bpt.root.id] = bpt.root //TODO: eventually remove this if no longer needed
 
 	bpt.meta = metadata{
 		dirty:    true,
@@ -188,7 +188,8 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 	} else {
 		bpt.splitNode(p.getID(), n.getID(), sibling.getID(), i)
 	}
-	err = bpt.validate([]NodeID{p.getID(), n.getID(), sibling.getID()})
+	err := bpt.validate([]*node{p, n, sibling})
+	
 	if err != nil {
 		bpt.bpm.UnpinNode(pID)
 		bpt.bpm.UnpinNode(nID)
@@ -302,39 +303,21 @@ func (bpt *BPlusTree) splitLeaf(leftID, middleID, rightID NodeID, i int) error {
 
 }
 
-func (bpt *BPlusTree) validate(nodesIDs []NodeID) error {
-
-	nodes := make([]*node, len(nodesIDs))
-
-	var err error
-
-	for i, nodeID := range nodesIDs {
-		nodes[i], err = bpt.bpm.FetchNode(nodeID)
-		if err != nil {
-			bpt.bpm.UnpinNode(nodeID)
-			return err
-		}
-	}
+func (bpt *BPlusTree) validate(nodes []*node) error {
 
 	for _, n := range nodes {
 		if n.isLeaf() {
 			if len(n.entries) > ((2 * int(bpt.order)) - 1) {
 				err := &OverflowError{Type: "entry", Max: ((2 * int(bpt.order)) - 1), Actual: len(n.entries)}
-				bpt.bpm.UnpinNode(n.getID())
 				return err
 			}
 		} else {
 
 			if len(n.entries) > ((2 * int(bpt.fanout)) - 1) {
 				err := &OverflowError{Type: "entry", Max: ((2 * int(bpt.fanout)) - 1), Actual: len(n.entries)}
-				bpt.bpm.UnpinNode(n.getID())
 				return err
 			}
 		}
-	}
-
-	for _, n := range nodes {
-		bpt.bpm.UnpinNode(n.getID())
 	}
 
 	return nil
@@ -343,8 +326,10 @@ func (bpt *BPlusTree) validate(nodesIDs []NodeID) error {
 
 func (bpt *BPlusTree) fillDegrees() error {
 
-	bpt.fanout = uint64((os.Getpagesize() - nodeHeaderLen() - 4) / (2 * (18 + 2 + 8)))
-	bpt.order = uint64(os.Getpagesize() - nodeHeaderLen()/(2*(8+8+8)))
+	// bpt.fanout = uint64((os.Getpagesize() - nodeHeaderLen() - 4) / (2 * (18 + 2 + 8)))
+	// bpt.order = uint64(os.Getpagesize() - nodeHeaderLen()/(2*(8+8+8)))
+	bpt.fanout = uint64(60)
+	bpt.order = uint64(60)
 
 	if bpt.order <= 2 || bpt.fanout <= 2 {
 		return &InvalidSizeError{Got: "value lower than two for either fanout or order", Should: "need at least 3"}
