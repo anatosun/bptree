@@ -188,8 +188,8 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 	} else {
 		bpt.splitNode(p.getID(), n.getID(), sibling.getID(), i)
 	}
-	err := bpt.validate([]*node{p, n, sibling})
-	
+	err = bpt.validate([]*node{p, n, sibling})
+
 	if err != nil {
 		bpt.bpm.UnpinNode(pID)
 		bpt.bpm.UnpinNode(nID)
