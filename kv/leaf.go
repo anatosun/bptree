@@ -5,7 +5,6 @@ func (n *node) isLeaf() bool {
 }
 
 func (n *node) insertEntryAt(at int, e entry) error {
-	n.dirty = true
 	prior_size := len(n.entries)
 	n.entries = append(n.entries, entry{})
 	copy(n.entries[at+1:], n.entries[at:])
@@ -27,14 +26,12 @@ func (n *node) insertEntryAt(at int, e entry) error {
 
 func (n *node) update(at int, value Value) error {
 	if n.entries[at].value != value {
-		n.dirty = true
 		n.entries[at].value = value
 	}
 	return nil
 }
 
 func (n *node) deleteEntryAt(at int) (entry, error) {
-	n.dirty = true
 	prior_size := len(n.entries)
 	entry := n.entries[at]
 	n.entries = append(n.entries[0:at], n.entries[at+1:]...)

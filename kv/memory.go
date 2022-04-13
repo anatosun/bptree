@@ -86,13 +86,12 @@ func (tree *BPlusTree) allocate() (NodeID, error) {
 		return 0, err
 	}
 
-	//Current fix until everything is implemented
+	//puts it into the buffer pool and makes it save it to disk
 	tree.nodes[uint64(id)], _ = tree.bpm.FetchNode(id)
-	tree.bpm.UnpinNode(id)
+	tree.bpm.UnpinNode(id, false)
 
 	return id, nil
 }
-
 
 // write queries the bufferpool manager to write the node to disk
 

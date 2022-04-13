@@ -43,11 +43,11 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 			node.pinCounter = 0
 
 		} else {
-			// let's still save it to disk
-			// since we're currently only emulating the disk
-			bpm.diskManager.WriteNode(node)
-			node.dirty = false
-			node.pinCounter = 0
+			// // let's still save it to disk
+			// // since we're currently only emulating the disk
+			// bpm.diskManager.WriteNode(node)
+			// node.dirty = false
+			// node.pinCounter = 0
 		}
 
 		//remove node from frame
@@ -74,8 +74,8 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 	//Finally, since creation of the new node does not imply it will be used, put it directly
 	// into the clock, since it gets created with pin counter 0. Also, since creation happens with the dirty
 	// bit set to true, this means that it will be stored automatically by the disk manager.
-	bpm.FetchNode(newNodeID) //sets pin counter to 1
-	bpm.UnpinNode(newNodeID) //unpins and puts it into the clock
+	bpm.FetchNode(newNodeID)       //sets pin counter to 1
+	bpm.UnpinNode(newNodeID, true) //unpins and puts it into the clock
 
 	// return NodeID
 	return newNodeID, nil
@@ -96,7 +96,7 @@ func (bpm *BufferPoolManager) GetFrameID() (NodeID, bool, error) {
 	return victimFrameID, false, nil
 }
 
-func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID) error {
+func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID, isDirty bool) error {
 	// Unpin node by decreasing counter.
 	// If isDirty is true, then set dirtybit to true
 	//fmt.Printf("\nUnpin node=%v\n", nodeID)
@@ -117,9 +117,9 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID) error {
 		(*bpm.replacePolicy).Unpin(frameID)
 	}
 
-	// if node.IsDirty() || dirty {
-	// 	node.dirty = true
-	// }
+	if isDirty || node.dirty {
+		node.dirty = true
+	}
 
 	return nil
 }

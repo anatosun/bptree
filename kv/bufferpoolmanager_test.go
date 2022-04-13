@@ -1,35 +1,31 @@
 package kv
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestBufferPoolManager(t *testing.T) {
 
-	// clock := NewClockPolicy(BufferPoolCapacity)
-	// disk := NewDiskManager(NodeID(0))
-	// bpm := NewBufferPoolManager(disk, clock)
+	clock := NewClockPolicy(BufferPoolCapacity)
+	disk := NewDiskManager()
+	bpm := NewBufferPoolManager(disk, clock)
 
-	// degree := uint8(3)
+	const n int = 20 //asume n<=Bufferpooolcapacity, don't change this since the tests are bound to this! (order, size..)
 
-	// start := disk.numNode
+	// Get 4 new nodes
+	for i := 0; i < n; i++ {
+		bpm.GetNewNode() //id=i+start
+	}
 
-	// const n int = 20//asume n<=Bufferpooolcapacity, don't change this since the tests are bound to this! (order, sitze..)
+	AssertEqual(t, len(bpm.pool), BufferPoolCapacity)
 
-	// // Get 4 new nodes
-	// for i := 0; i < n; i++ {
-	// 	bpm.GetNewNode(degree) //id=i+start
-	// }
-
-	// AssertEqual(t, len(bpm.pool), BufferPoolCapacity)
-
-	// // Unpin node with id=2 and set dirty bit
-	// testingNode, _ := bpm.FetchNode(2)
-	// AssertEqual(t, testingNode.getPinCounter(), uint64(1))
-	// AssertEqual(t, bpm.UnpinNode(testingNode.getID()), nil) //if not nill => error
-	// AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(0))
-	// // AssertEqual(t, (*bpm.pool[2]).IsDirty(), true) //Needs to be updated...
+	// Unpin node with id=2 and set dirty bit
+	testingNode, _ := bpm.FetchNode(2)
+	AssertEqual(t, testingNode.getPinCounter(), uint64(1))
+	AssertEqual(t, bpm.UnpinNode(testingNode.getID(), false), nil) //if not nill => error
+	AssertEqual(t, (*bpm.pool[2]).getPinCounter(), uint64(0))
+	// AssertEqual(t, (*bpm.pool[2]).IsDirty(), true) //Needs to be updated...
 
 	// // Nodes currently in Clock, should be 1
 	// // Very specific to the clock, but to test whether bufferpool
@@ -58,8 +54,6 @@ func TestBufferPoolManager(t *testing.T) {
 	// // bpm.UnpinNode((*testingNode).getID())
 	// // AssertEqual(t, getClockSize(), 1)
 
-
-
 	// // // Now fetch it (from buffer pool) (and hence remove it from the clock again)
 	// // bpm.FetchNode((*node).getID())
 	// // AssertEqual(t, getClockSize(), 0)
@@ -72,15 +66,12 @@ func TestBufferPoolManager(t *testing.T) {
 	// // AssertEqual(t, (*node).getPinCounter(), uint64(4))
 	// // (*bpm.pool[1]).setPinCounter(1) //back to 1
 
-
 	// // // Unpin all nodes with id 0,1,4,3 (+start) (remember, node id=2 got replaced with id=4)
 	// // AssertEqual(t, bpm.UnpinNode(NodeID(start)), nil)
 	// // AssertEqual(t, bpm.UnpinNode(NodeID(start+1)), nil)
 	// // AssertEqual(t, bpm.UnpinNode(NodeID(start+4)), nil)
 	// // AssertEqual(t, bpm.UnpinNode(NodeID(start+3)), nil)
 	// // AssertEqual(t, getClockSize(), 4) //should be 4 by now
-
-
 
 	// // //Replace our old nodes 1...4\{2} with 5...8 with new ones
 	// // // 1..4\{2} should be stored to disk now
@@ -113,7 +104,6 @@ func TestBufferPoolManager(t *testing.T) {
 
 	// // bpm.FlushNode(NodeID(start+5)) // Check visually....
 	// // bpm.FlushAllNodes()
-
 
 }
 

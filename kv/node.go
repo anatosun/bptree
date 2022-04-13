@@ -40,7 +40,6 @@ func newNode(id uint64) *node {
 
 func (n *node) insertChildAt(at int, child *node) error {
 	prior_size := len(n.children)
-	n.dirty = true
 	n.children = append(n.children, 0)
 	copy(n.children[at+1:], n.children[at:])
 	n.children[at] = child.id

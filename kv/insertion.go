@@ -17,11 +17,11 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 		n2, err_fetching_2 := bpt.bpm.FetchNode(nodeID_2)
 
 		if err_fetching_1 != nil {
-			bpt.bpm.UnpinNode(nodeID_1)
+			bpt.bpm.UnpinNode(nodeID_1, false)
 			return false, err_fetching_1
 		}
 		if err_fetching_2 != nil {
-			bpt.bpm.UnpinNode(nodeID_2)
+			bpt.bpm.UnpinNode(nodeID_2, false)
 			return false, err_fetching_2
 		}
 
@@ -37,8 +37,8 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 			return false, err
 		}
 
-		bpt.bpm.UnpinNode(nodeID_1)
-		bpt.bpm.UnpinNode(nodeID_2)
+		bpt.bpm.UnpinNode(nodeID_1, true)
+		bpt.bpm.UnpinNode(nodeID_2, true)
 	}
 
 	return bpt.path(bpt.root.getID(), e)
@@ -48,16 +48,16 @@ func (bpt *BPlusTree) path(nodeID NodeID, e entry) (bool, error) {
 
 	node, err := bpt.bpm.FetchNode(nodeID)
 	if err != nil {
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, false)
 		return false, err
 	}
 
 	if node.isLeaf() {
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, false)
 		return bpt.insertLeaf(nodeID, e)
 	}
 
-	bpt.bpm.UnpinNode(nodeID)
+	bpt.bpm.UnpinNode(nodeID, false)
 	return bpt.insertInternal(nodeID, e)
 }
 
@@ -65,7 +65,7 @@ func (bpt *BPlusTree) insertLeaf(nodeID NodeID, e entry) (bool, error) {
 
 	n, err := bpt.bpm.FetchNode(nodeID)
 	if err != nil {
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, false)
 		return false, err
 	}
 
@@ -74,20 +74,20 @@ func (bpt *BPlusTree) insertLeaf(nodeID NodeID, e entry) (bool, error) {
 	if found {
 		err := n.update(at, e.value)
 		if err != nil {
-			bpt.bpm.UnpinNode(nodeID)
+			bpt.bpm.UnpinNode(nodeID, true)
 			return false, err
 		}
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, true)
 		return false, err
 	}
 
 	err = n.insertEntryAt(at, e)
 	if err != nil {
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, true)
 		return false, err
 	}
-	
-	bpt.bpm.UnpinNode(nodeID)
+
+	bpt.bpm.UnpinNode(nodeID, true)
 	return true, err
 }
 
@@ -95,7 +95,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
 	node, err := bpt.bpm.FetchNode(nodeID)
 	if err != nil {
-		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(nodeID, false)
 		return false, err
 	}
 
@@ -108,8 +108,8 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 	child, err := bpt.bpm.FetchNode(childID)
 
 	if err != nil {
-		bpt.bpm.UnpinNode(nodeID)
-		bpt.bpm.UnpinNode(childID)
+		bpt.bpm.UnpinNode(nodeID, false)
+		bpt.bpm.UnpinNode(childID, false)
 		return false, err
 	}
 
@@ -123,21 +123,20 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 		sibling, err := bpt.bpm.FetchNode(newNodeID)
 
 		if err != nil {
-			bpt.bpm.UnpinNode(nodeID)
-			bpt.bpm.UnpinNode(childID)
-			bpt.bpm.UnpinNode(newNodeID)
+			bpt.bpm.UnpinNode(nodeID, true)
+			bpt.bpm.UnpinNode(childID, true)
+			bpt.bpm.UnpinNode(newNodeID, true)
 			return false, err
 		}
-
 
 		if err := bpt.split(node.getID(), child.getID(), sibling.getID(), at); err != nil {
-			bpt.bpm.UnpinNode(nodeID)
-			bpt.bpm.UnpinNode(childID)
-			bpt.bpm.UnpinNode(newNodeID)
+			bpt.bpm.UnpinNode(nodeID, true)
+			bpt.bpm.UnpinNode(childID, true)
+			bpt.bpm.UnpinNode(newNodeID, true)
 			return false, err
 		}
 
-		bpt.bpm.UnpinNode(newNodeID)
+		bpt.bpm.UnpinNode(newNodeID, true)
 
 		if e.key >= node.entries[at].key {
 
@@ -145,19 +144,19 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 			child, err = bpt.bpm.FetchNode(newChildID)
 
 			if err != nil {
-				bpt.bpm.UnpinNode(nodeID)
-				bpt.bpm.UnpinNode(childID)
-				bpt.bpm.UnpinNode(newChildID)
-				bpt.bpm.UnpinNode(newNodeID)
+				bpt.bpm.UnpinNode(nodeID, true)
+				bpt.bpm.UnpinNode(childID, true)
+				bpt.bpm.UnpinNode(newChildID, false)
+				bpt.bpm.UnpinNode(newNodeID, true)
 				return false, err
 			}
-			bpt.bpm.UnpinNode(newChildID)
+			bpt.bpm.UnpinNode(newChildID, true)
 
 		}
 	}
 
-	bpt.bpm.UnpinNode(nodeID)
-	bpt.bpm.UnpinNode(childID)
+	bpt.bpm.UnpinNode(nodeID, true)
+	bpt.bpm.UnpinNode(childID, true)
 
 	return bpt.path(child.getID(), e)
 }
