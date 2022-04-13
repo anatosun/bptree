@@ -36,7 +36,7 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
 		node := bpm.pool[frameID]
-		if node.IsDirty() { //TODO: Fix this mess
+		if node.IsDirty() {
 			// save to disk
 			bpm.diskManager.WriteNode(node)
 			node.dirty = false
