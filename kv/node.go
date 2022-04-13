@@ -3,6 +3,7 @@ package kv
 import (
 	"crypto/rand"
 	"encoding/binary"
+	// "fmt"
 )
 
 const pageSize = 4 * 1024 // 4KB
@@ -24,6 +25,7 @@ func newNode(id uint64, degree uint8) *node {
 	return &node{id: id, dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree)}
 }
 
+// Convert node to nodeID, fetch it using bpm
 func (n *node) insertChildAt(at int, child *node) error {
 	prior_size := len(n.children)
 	n.dirty = true
@@ -43,12 +45,11 @@ func (n *node) insertChildAt(at int, child *node) error {
 }
 
 func (n *node) full() bool {
-
 	return len(n.entries) == ((2 * int(n.degree)) - 1)
-
 }
 
 // dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
+// Convert node to nodeID, fetch it using bpm
 func (p *node) splitNode(n, sibling *node, i int) error {
 
 	parentKey := n.entries[p.degree-1]
@@ -75,6 +76,7 @@ func (p *node) splitNode(n, sibling *node, i int) error {
 
 }
 
+// Convert node to nodeID, fetch it using bpm
 func (p *node) split(n, sibling *node, i int) error {
 	p.dirty = true
 	n.dirty = true

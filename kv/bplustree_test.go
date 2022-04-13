@@ -46,29 +46,29 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-func TestRemove(t *testing.T) {
+// func TestRemove(t *testing.T) {
 
-	if store.Len() == 0 {
-		TestInsert(t)
-	}
+// 	if store.Len() == 0 {
+// 		TestInsert(t)
+// 	}
 
-	for i := 0; i < len(array); i++ {
-		_, err := store.Remove(Key(array[i]))
-		if err != nil {
-			t.Errorf("while removing %d: %v", array[i], err)
-			t.FailNow()
-		}
+// 	for i := 0; i < len(array); i++ {
+// 		_, err := store.Remove(Key(array[i]))
+// 		if err != nil {
+// 			t.Errorf("while removing %d: %v", array[i], err)
+// 			t.FailNow()
+// 		}
 
-	}
+// 	}
 
-	expected := 0
-	actual := int(store.Len())
+// 	expected := 0
+// 	actual := int(store.Len())
 
-	if expected != actual {
-		t.Errorf("expected %d, got %d", expected, actual)
-		t.FailNow()
-	}
-}
+// 	if expected != actual {
+// 		t.Errorf("expected %d, got %d", expected, actual)
+// 		t.FailNow()
+// 	}
+// }
 
 func TestUpdate(t *testing.T) {
 

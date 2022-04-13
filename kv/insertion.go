@@ -1,15 +1,49 @@
 package kv
 
+
+// Convert node to nodeID, fetch it using bpm
+
+import(
+	"fmt"
+)
+
 func (bpt *BPlusTree) insert(e entry) (bool, error) {
+
 	if bpt.root.full() {
 
-		nodes, err := bpt.allocate(2)
-		if err != nil {
-			return false, err
+		nodeID_1, err1 := bpt.allocate2()
+		nodeID_2, err2 := bpt.allocate2()
+
+		// if err != nil {
+		if err1 != nil {
+			return false, err1
+		}
+		if err2 != nil {
+			return false, err2
 		}
 
-		newRoot := nodes[0]
-		rightSibling := nodes[1]
+		n1, err1 := bpt.bpm.FetchNode(*nodeID_1)
+		n2, err2 := bpt.bpm.FetchNode(*nodeID_2)
+
+		if err1 != nil {
+			return false, err1
+		}
+		if err2 != nil {
+			return false, err2
+		}
+
+		// nodes, err := bpt.allocate(2)
+		// if err != nil {
+		// 	return false, err
+		// }
+
+		// fmt.Printf("node1=%v, node2=%v\n", n1, n2)
+		// fmt.Printf("node3=%v, node4=%v\n", nodes[0], nodes[1])
+
+		// newRoot := nodes[0]
+		// rightSibling := nodes[1]
+		newRoot := n1
+		rightSibling := n2
 		oldRoot := bpt.root
 
 		newRoot.children = append(newRoot.children, oldRoot.id)
@@ -19,6 +53,15 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 		if err := newRoot.split(oldRoot, rightSibling, 0); err != nil {
 			return false, err
 		}
+
+		// Unpin nodes, since no longer in use
+		// for _, node := range nodes {
+		// //	fmt.Println("Unpin node")
+		// 	bpt.bpm.UnpinNode(NodeID(node.getID()))
+		// }
+		bpt.bpm.UnpinNode(*nodeID_1)
+		bpt.bpm.UnpinNode(*nodeID_2)
+
 	}
 
 	return bpt.path(bpt.root, e)
@@ -58,6 +101,7 @@ func (bpt *BPlusTree) insertLeaf(n *node, e entry) (bool, error) {
 }
 
 func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
+
 	at, found := n.search(e.key)
 	if found {
 		at++
@@ -69,14 +113,21 @@ func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
 	}
 
 	if child.full() {
-		nodes, err := bpt.allocate(1)
+		// nodes, err := bpt.allocate(1)
+		nodeID, err := bpt.allocate2()
 		if err != nil {
 			return false, err
 		}
-		sibling := nodes[0]
+		// sibling := nodes[0]
+		sibling, err := bpt.bpm.FetchNode(*nodeID)
+		if err != nil {
+			return false, err
+		}
+
 		if err := n.split(child, sibling, at); err != nil {
 			return false, err
 		}
+		bpt.bpm.UnpinNode(*nodeID)
 
 		if e.key >= n.entries[at].key {
 			child, err = bpt.nodeRef(n.children[at+1]) //TODO: After no longer in use, unpin
@@ -90,5 +141,11 @@ func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
 	// if err != nil {
 	// 	return false, err
 	// }
+
 	return bpt.path(child, e)
+}
+
+
+func dummyfmt3() {
+	fmt.Println("x")
 }

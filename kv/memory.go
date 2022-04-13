@@ -35,7 +35,7 @@ func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
 		return n, nil
 	}
 
-	n = newNode(id, uint8(tree.meta.pageSize))
+	n = newNode(id, uint8(tree.degree))
 	// if err := tree.pager.Unmarshal(id, n); err != nil {
 	// 	return nil, err
 	// }
@@ -48,22 +48,12 @@ func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
 
 func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 
+	//First, let's get an free ID from this
 	pid, rem, err := findSequentialFreeSpace(tree.meta.free, n)
 	tree.meta.free = rem
 
-
-	//TODO: 
-	// Since allocate(), this page(node) doesn't exist. Create a new node
-	// with the given pid and pass reference to buffer pool (or copy by value), if we cont.
-	// using findseq...()
-
-	//Otherwise, if necessary, store the ID of the next node being created
-	//in the meta of the tree and retrieve it from there for page creation (need to pass ID)
-
-	// Or easiest: let the bufferpool give you a new node
-
-	// ask for more pages to the buffer pool
 	if err != nil {
+		// SequentialFreeSpace is exhausted, get from here
 		// var err error
 		// pid, err = tree.pager.Alloc(n)
 		// if err != nil {
@@ -74,13 +64,34 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 
 	nodes := make([]*node, n)
 	for i := 0; i < n; i++ {
+		//fmt.Printf("creating node with id=%d\n", pid)
 		n := newNode(pid, tree.degree)
 		tree.nodes[pid] = n
 		nodes[i] = n
 		pid++
+
 	}
 
+	for i := 0; i < n; i++ {
+		//node := tree.bpm.GetNewNode(3)
+		//fmt.Printf("node=%v\n",node)
+	}
+
+
 	return nodes, nil
+}
+
+func (tree *BPlusTree) allocate2() (*NodeID, error) {
+	id, err := tree.bpm.GetNewNode(tree.degree)
+	if err != nil {
+		return nil, err
+	}
+
+	//Current fix until everything is implemented
+	tree.nodes[uint64(*id)], _ = tree.bpm.FetchNode(*id)
+	tree.bpm.UnpinNode(*id)
+
+	return id, nil
 }
 
 // write queries the bufferpool manager to write the node to disk

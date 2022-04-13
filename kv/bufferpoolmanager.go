@@ -5,18 +5,18 @@ import (
 	"fmt"
 )
 
-const BufferPoolCapacity = 10
+const BufferPoolCapacity = 5
 const debug_buffer = false
 
 type BufferPoolManager struct {
-	diskManager    DiskManager
+	diskManager    *DiskManager
 	pool           [BufferPoolCapacity]*node
 	replacePolicy  *ClockPolicy
 	freeFramesList []NodeID
 	nodesTable     map[NodeID]NodeID // maps nodeID <-> FrameID of buffer pool
 }
 
-func NewBufferPoolManager(DiskManager DiskManager, clock *ClockPolicy) *BufferPoolManager {
+func NewBufferPoolManager(DiskManager *DiskManager, clock *ClockPolicy) *BufferPoolManager {
 	freeFramesList := make([]NodeID, 0)
 	nodes := [BufferPoolCapacity]*node{}
 	for i := 0; i < BufferPoolCapacity; i++ {
@@ -26,10 +26,10 @@ func NewBufferPoolManager(DiskManager DiskManager, clock *ClockPolicy) *BufferPo
 	return &BufferPoolManager{DiskManager, nodes, clock, freeFramesList, make(map[NodeID]NodeID)}
 }
 
-func (bpm *BufferPoolManager) GetNewNode() *node {
+func (bpm *BufferPoolManager) GetNewNode(degree uint8) (*NodeID, error) {
 	frameID, isFromFreeFramesList := bpm.GetFrameID()
 	if frameID == nil {
-		return nil
+		return nil, fmt.Errorf("No free/unused frame in buffer pool.\n")
 	}
 
 	// Victimized, i.e. not from free list
@@ -58,17 +58,23 @@ func (bpm *BufferPoolManager) GetNewNode() *node {
 	}
 
 	// allocate new node
-	id := bpm.diskManager.AllocateNode() //TODO/FX: Here, the disk manager gives you a "new node id"
-	degree := uint8(70)
-//	node := &node{id: , data: [NodeDataSize]byte{}, dirty: false, pinCounter: 1}
+	newNodeID := bpm.diskManager.AllocateNode() //TODO/FX: Here, the disk manager gives you a "new node id"
+	//node := &node{id: , data: [NodeDataSize]byte{}, dirty: false, pinCounter: 1}
 
-	node := &node{id: uint64(*id), dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree),  pinCounter: 1}
+	//node := &node{id: uint64(*id), dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree),  pinCounter: 1}
 
-	bpm.nodesTable[*id] = *frameID
+	node := newNode(uint64(*newNodeID), degree)
+	bpm.nodesTable[*newNodeID] = *frameID
 	bpm.pool[*frameID] = node
 
-	// return Node
-	return node
+	//Finally, since creation of the new node does not imply it will be used, put it directly 
+	// into the clock, since it gets created with pin counter 0. Also, since creation happens with the dirty 
+	// bit set to true, this means that it will be stored automatically by the disk manager.
+	bpm.FetchNode(*newNodeID) //sets pin counter to 1
+	bpm.UnpinNode(*newNodeID) //unpins and puts it into the clock
+
+	// return NodeID
+	return newNodeID, nil
 }
 
 func (bpm *BufferPoolManager) GetFrameID() (*NodeID, bool) {
@@ -84,7 +90,7 @@ func (bpm *BufferPoolManager) GetFrameID() (*NodeID, bool) {
 func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID) error {
 	// Unpin node by decreasing counter.
 	// If isDirty is true, then set dirtybit to true
-
+	//fmt.Printf("\nUnpin node=%v\n", nodeID)
 	frameID, found := bpm.nodesTable[nodeID]
 
 	if !found {
@@ -109,8 +115,7 @@ func (bpm *BufferPoolManager) UnpinNode(nodeID NodeID) error {
 	return nil
 }
 
-func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) *node {
-	// Fetch node with given nodeID,
+func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) (*node, error) {
 
 	//check first if node is in buffer pool, if yes, return
 	frameID, found := bpm.nodesTable[nodeID]
@@ -120,7 +125,7 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) *node {
 		node.increasePinCounter()
 
 		(*bpm.replacePolicy).Pin(frameID) // remove node from clock
-		return node
+		return node, nil
 
 		if debug_buffer {
 			fmt.Printf("nodeID=%d,frameID=%d exists in buffer pool\n", nodeID, frameID)
@@ -132,8 +137,13 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) *node {
 		}
 	}
 
-	// first get a free frameID
+	// otherwise, get a free frameID
 	freeFrameID, isFromFreeFramesList := bpm.GetFrameID()
+
+	// if nil, then there's no free space in the buffer and everything is being used
+	if freeFrameID == nil {
+		return nil, fmt.Errorf("No free space in the buffer and everything is being used")
+	}
 
 	// If Victimized, i.e. not from free list, save to disk
 	if !isFromFreeFramesList {
@@ -162,14 +172,14 @@ func (bpm *BufferPoolManager) FetchNode(nodeID NodeID) *node {
 
 	node, err := bpm.diskManager.ReadNode(nodeID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	(*node).setPinCounter(1)
 	bpm.nodesTable[nodeID] = *freeFrameID
 	bpm.pool[*freeFrameID] = node
 
-	return node
+	return node, nil
 }
 
 func (bpm *BufferPoolManager) DeleteNode(nodeID NodeID) error {
@@ -218,7 +228,9 @@ func (bpm *BufferPoolManager) PrintPool() {
 	fmt.Println("------------------------------------")
 	fmt.Println("Nodes in Buffer Pool:")
 	for _, node := range bpm.pool {
-		fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
+		if node != nil {
+			fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
+		}
 	}
 }
 
@@ -226,6 +238,8 @@ func (bpm *BufferPoolManager) PrintTable() {
 	fmt.Println("------------------------------------")
 	fmt.Println("Nodes in Table:")
 	for _, i := range bpm.nodesTable {
-		fmt.Printf("i=%d, node=%v\n", i, *bpm.pool[i])
+		if nil != bpm.pool[i] {
+			fmt.Printf("i=%d, node=%v\n", i, *bpm.pool[i])
+		}
 	}
 }
