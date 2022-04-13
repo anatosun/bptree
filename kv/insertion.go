@@ -25,9 +25,11 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 		n2, err_fetching_2 := bpt.bpm.FetchNode(*nodeID_2)
 
 		if err_fetching_1 != nil {
+			bpt.bpm.UnpinNode(*nodeID_1)
 			return false, err_fetching_1
 		}
 		if err_fetching_2 != nil {
+			bpt.bpm.UnpinNode(*nodeID_2)
 			return false, err_fetching_2
 		}
 
@@ -71,7 +73,10 @@ func (bpt *BPlusTree) path(nodeID NodeID, e entry) (bool, error) {
 func (bpt *BPlusTree) insertLeaf(nodeID NodeID, e entry) (bool, error) {
 
 	node, err := bpt.bpm.FetchNode(nodeID)
-	if err != nil { return false, err }
+	if err != nil {
+		bpt.bpm.UnpinNode(nodeID)
+		return false, err
+	}
 
 	at, found := node.search(e.key)
 
