@@ -38,7 +38,7 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 		bpt.root = newRoot
 		bpt.meta.root = newRoot.id
 
-		if err := bpt.split(newRoot, oldRoot, rightSibling, 0); err != nil {
+		if err := bpt.split(newRoot.getID(), oldRoot.getID(), rightSibling.getID(), 0); err != nil {
 			return false, err
 		}
 
@@ -135,7 +135,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 		}
 
 
-		if err := bpt.split(node, child, sibling, at); err != nil {
+		if err := bpt.split(node.getID(), child.getID(), sibling.getID(), at); err != nil {
 			bpt.bpm.UnpinNode(nodeID)
 			bpt.bpm.UnpinNode(childID)
 			bpt.bpm.UnpinNode(*newNodeID)

@@ -56,7 +56,7 @@ func New() *BPlusTree {
 		bpt.meta.free[i] = uint64(i + 2)
 	}
 
-	bpt.computeDegree(4096)
+	bpt.fillDegrees()
 
 	//Usually, you would unpin now every fetched node. However, the root should always stay in memory
 	// So nothing to do here.
@@ -159,76 +159,192 @@ func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child NodeID, at int, foun
 	return bpt.search(childID, key)
 }
 
-func (bpt *BPlusTree) split(p, n, sibling *node, i int) error {
+func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
+
+	p, err := bpt.bpm.FetchNode(pID)
+	if err != nil {
+		bpt.bpm.UnpinNode(pID)
+		return err
+	}
+
+	n, err := bpt.bpm.FetchNode(nID)
+	if err != nil {
+		bpt.bpm.UnpinNode(nID)
+		return err
+	}
+
+	sibling, err := bpt.bpm.FetchNode(siblingID)
+	if err != nil {
+		bpt.bpm.UnpinNode(siblingID)
+		return err
+	}
+
 	p.dirty = true
 	n.dirty = true
 	sibling.dirty = true
 
-	if len(n.children) == 0 {
-		// split leaf node. use 'sibling' as the right node for 'n'.
-		sibling.next = n.next
-		sibling.prev = n.id
-		n.next = sibling.id
-
-		sibling.entries = make([]entry, bpt.order-1)
-		copy(sibling.entries, n.entries[bpt.order:])
-		n.entries = n.entries[:bpt.order]
-
-		p.insertChildAt(i+1, sibling)
-		p.insertEntryAt(i, sibling.entries[0])
+	if n.isLeaf() {
+		bpt.splitLeaf(p.getID(), n.getID(), sibling.getID(), i)
 	} else {
-		// split internal node. use 'sibling' as left node for 'n'.
-		parentKey := n.entries[bpt.fanout-1]
-
-		sibling.entries = make([]entry, bpt.fanout-1)
-		copy(sibling.entries, n.entries[:bpt.fanout])
-		n.entries = n.entries[bpt.fanout:]
-
-		sibling.children = make([]uint64, bpt.fanout)
-		copy(sibling.children, n.children[:bpt.fanout])
-		n.children = n.children[bpt.fanout:]
-
-		p.insertChildAt(i, sibling)
-		p.insertEntryAt(i, parentKey)
-
+		bpt.splitNode(p.getID(), n.getID(), sibling.getID(), i)
 	}
-	err := bpt.validate([]*node{p, n, sibling})
+	err = bpt.validate([]NodeID{p.getID(), n.getID(), sibling.getID()})
 	if err != nil {
+		bpt.bpm.UnpinNode(pID)
+		bpt.bpm.UnpinNode(nID)
+		bpt.bpm.UnpinNode(siblingID)
 		return err
 	}
+
+	bpt.bpm.UnpinNode(pID)
+	bpt.bpm.UnpinNode(nID)
+	bpt.bpm.UnpinNode(siblingID)
+
 	return nil
 }
 
-func (bpt *BPlusTree) validate(nodes []*node) error {
+func (bpt *BPlusTree) splitNode(leftID, middleID, rightID NodeID, i int) error {
+
+	left, err := bpt.bpm.FetchNode(leftID)
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		return err
+	}
+
+	middle, err := bpt.bpm.FetchNode(middleID)
+	if err != nil {
+		bpt.bpm.UnpinNode(middleID)
+		return err
+	}
+
+	right, err := bpt.bpm.FetchNode(rightID)
+	if err != nil {
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+
+	parentKey := middle.entries[bpt.fanout-1]
+	right.entries = make([]entry, bpt.fanout-1)
+	copy(right.entries, middle.entries[:bpt.fanout])
+	middle.entries = middle.entries[bpt.fanout:]
+	right.children = make([]uint64, bpt.fanout)
+	copy(right.children, middle.children[:bpt.fanout])
+	middle.children = middle.children[bpt.fanout:]
+	err = left.insertChildAt(i, right)
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		bpt.bpm.UnpinNode(middleID)
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+	err = left.insertEntryAt(i, parentKey)
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		bpt.bpm.UnpinNode(middleID)
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+
+	bpt.bpm.UnpinNode(leftID)
+	bpt.bpm.UnpinNode(middleID)
+	bpt.bpm.UnpinNode(rightID)
+
+	return nil
+}
+
+func (bpt *BPlusTree) splitLeaf(leftID, middleID, rightID NodeID, i int) error {
+
+	left, err := bpt.bpm.FetchNode(leftID)
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		return err
+	}
+
+	middle, err := bpt.bpm.FetchNode(middleID)
+	if err != nil {
+		bpt.bpm.UnpinNode(middleID)
+		return err
+	}
+
+	right, err := bpt.bpm.FetchNode(rightID)
+	if err != nil {
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+
+	right.next = middle.next
+	right.prev = middle.id
+	middle.next = right.id
+
+	right.entries = make([]entry, bpt.order-1)
+	copy(right.entries, middle.entries[bpt.order:])
+	middle.entries = middle.entries[:bpt.order]
+
+	err = left.insertChildAt(i+1, right)
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		bpt.bpm.UnpinNode(middleID)
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+	err = left.insertEntryAt(i, right.entries[0])
+	if err != nil {
+		bpt.bpm.UnpinNode(leftID)
+		bpt.bpm.UnpinNode(middleID)
+		bpt.bpm.UnpinNode(rightID)
+		return err
+	}
+
+	bpt.bpm.UnpinNode(leftID)
+	bpt.bpm.UnpinNode(middleID)
+	bpt.bpm.UnpinNode(rightID)
+	return nil
+
+}
+
+func (bpt *BPlusTree) validate(nodesIDs []NodeID) error {
+
+	nodes := make([]*node, len(nodesIDs))
+
+	var err error
+
+	for i, nodeID := range nodesIDs {
+		nodes[i], err = bpt.bpm.FetchNode(nodeID)
+		if err != nil {
+			bpt.bpm.UnpinNode(nodeID)
+			return err
+		}
+	}
 
 	for _, n := range nodes {
 		if n.isLeaf() {
 			if len(n.entries) > ((2 * int(bpt.order)) - 1) {
 				err := &OverflowError{Type: "entry", Max: ((2 * int(bpt.order)) - 1), Actual: len(n.entries)}
+				bpt.bpm.UnpinNode(n.getID())
 				return err
 			}
 		} else {
 
 			if len(n.entries) > ((2 * int(bpt.fanout)) - 1) {
 				err := &OverflowError{Type: "entry", Max: ((2 * int(bpt.fanout)) - 1), Actual: len(n.entries)}
+				bpt.bpm.UnpinNode(n.getID())
 				return err
 			}
 		}
 	}
 
+	for _, n := range nodes {
+		bpt.bpm.UnpinNode(n.getID())
+	}
+
 	return nil
 }
 
-func (bpt *BPlusTree) computeDegree(pageSz int) error {
-	leaf := os.Getpagesize() - nodeHeaderLen()
-	node := os.Getpagesize() - nodeHeaderLen()
 
-	leafEntrySize := (10 + 2 + 8)
-	internalEntrySize := (8 + 8 + 8)
+func (bpt *BPlusTree) fillDegrees() error {
 
-	// 4 bytes extra for the one extra child pointer
-	bpt.fanout = uint64((leaf - 4) / (2 * internalEntrySize))
-	bpt.order = uint64(node / (2 * leafEntrySize))
+	bpt.fanout = uint64((os.Getpagesize() - nodeHeaderLen() - 4) / (2 * (18 + 2 + 8)))
+	bpt.order = uint64(os.Getpagesize() - nodeHeaderLen()/(2*(8+8+8)))
 
 	if bpt.order <= 2 || bpt.fanout <= 2 {
 		return &InvalidSizeError{Got: "value lower than two for either fanout or order", Should: "need at least 3"}

@@ -45,24 +45,24 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 
 	
 
-	// return node, nil
+	return node, nil
 
-	//MOCK DISK
-	if node2, ok := d.nodes[nodeID]; ok {
-		node2.dirty = true
+	// //MOCK DISK
+	// if node2, ok := d.nodes[nodeID]; ok {
+	// 	node2.dirty = true
 
-		n1s := fmt.Sprintf("%v", node)
-		n2s := fmt.Sprintf("%v", node2)
-		if n1s != n2s {
-			fmt.Printf("disk  =%v\n",n1s)
-			fmt.Printf("memory=%v\n",n2s)
-			fmt.Println("MISMATCH READING")
-		}
+	// 	n1s := fmt.Sprintf("%v", node)
+	// 	n2s := fmt.Sprintf("%v", node2)
+	// 	if n1s != n2s {
+	// 		fmt.Printf("disk  =%v\n",n1s)
+	// 		fmt.Printf("memory=%v\n",n2s)
+	// 		fmt.Println("MISMATCH READcING")
+	// 	}
 		
-		return node2, nil
-	}
+	// 	return node, nil
+	// }
 
-	return nil, fmt.Errorf("Node not found")
+	// return nil, fmt.Errorf("Node not found")
 
 	
 }
@@ -70,7 +70,7 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 //WriteNode writes a node in memory to nodes
 func (d *DiskManager) WriteNode(node *node) error {
 
-	
+
 	bin, err := node.MarshalBinary()
 	if err != nil {
 		return err
