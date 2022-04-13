@@ -35,7 +35,7 @@ func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
 		return n, nil
 	}
 
-	n = newNode(id, uint8(tree.degree))
+	n = newNode(id)
 	// if err := tree.pager.Unmarshal(id, n); err != nil {
 	// 	return nil, err
 	// }
@@ -65,7 +65,7 @@ func (tree *BPlusTree) allocate_old(n int) ([]*node, error) {
 	nodes := make([]*node, n)
 	for i := 0; i < n; i++ {
 		//fmt.Printf("creating node with id=%d\n", pid)
-		n := newNode(pid, tree.degree)
+		n := newNode(pid)
 		tree.nodes[pid] = n
 		nodes[i] = n
 		pid++
@@ -77,21 +77,7 @@ func (tree *BPlusTree) allocate_old(n int) ([]*node, error) {
 		//fmt.Printf("node=%v\n",node)
 	}
 
-
 	return nodes, nil
-}
-
-func (tree *BPlusTree) allocate() (*NodeID, error) {
-	id, err := tree.bpm.GetNewNode(tree.degree)
-	if err != nil {
-		return nil, err
-	}
-
-	//Current fix until everything is implemented
-	tree.nodes[uint64(*id)], _ = tree.bpm.FetchNode(*id)
-	tree.bpm.UnpinNode(*id)
-
-	return id, nil
 }
 
 // write queries the bufferpool manager to write the node to disk

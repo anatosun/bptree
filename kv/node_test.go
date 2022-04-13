@@ -8,7 +8,7 @@ import (
 
 func TestMarshalUnmarshalNode(t *testing.T) {
 	degree := uint8(rand.Int() % 70)
-	node := newNode(0, degree)
+	node := newNode(0)
 	node.next = 4830759
 	node.prev = 48583
 	offset := 29
@@ -17,10 +17,10 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 		return children[i] < children[j]
 	})
 
-	for i := 0; !node.full(); i++ {
+	for i := 0; i < int(degree*2); i++ {
 		entry := entry{key: Key(i + offset), value: Value([10]byte{byte(i + offset)})}
 		node.insertEntryAt(i, entry)
-		node.insertChildAt(i, newNode(children[i], degree))
+		node.insertChildAt(i, newNode(children[i]))
 	}
 
 	data, err := node.MarshalBinary()
@@ -29,7 +29,7 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 		t.FailNow()
 	}
 
-	u := newNode(546, 78) // let's initialise it we dummy values
+	u := newNode(546) // let's initialise it we dummy values
 	u.next = 480
 	u.prev = 128
 	err = u.UnmarshalBinary(data)
@@ -44,10 +44,10 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 		t.FailNow()
 	}
 
-	if u.degree != node.degree {
-		t.Errorf("expected %d, got %d", node.degree, u.degree)
-		t.FailNow()
-	}
+	// if u.degree != node.degree {
+	// 	t.Errorf("expected %d, got %d", node.degree, u.degree)
+	// 	t.FailNow()
+	// }
 
 	if len(u.entries) != len(node.entries) {
 		t.Errorf("expected %d, got %d", len(node.entries), len(u.entries))
