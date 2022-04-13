@@ -26,16 +26,16 @@ func NewBufferPoolManager(DiskManager *DiskManager, clock *ClockPolicy) *BufferP
 	return &BufferPoolManager{DiskManager, nodes, clock, freeFramesList, make(map[NodeID]NodeID)}
 }
 
-func (bpm *BufferPoolManager) GetNewNode() (*NodeID, error) {
+func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 	frameID, isFromFreeFramesList := bpm.GetFrameID()
 	if frameID == nil {
-		return nil, fmt.Errorf("No free/unused frame in buffer pool.\n")
+		return 0, fmt.Errorf("No free/unused frame in buffer pool.\n")
 	}
 
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
 		node := bpm.pool[*frameID]
-		if node.IsDirty(){
+		if node.IsDirty(){ //TODO: Fix this mess
 			// save to disk
 			bpm.diskManager.WriteNode(node)
 			node.dirty = false
@@ -58,20 +58,23 @@ func (bpm *BufferPoolManager) GetNewNode() (*NodeID, error) {
 	}
 
 	// allocate new node
-	newNodeID := bpm.diskManager.AllocateNode() //TODO/FX: Here, the disk manager gives you a "new node id"
+	newNodeID, err := bpm.diskManager.AllocateNode()
+	if err != nil {
+		return 0, fmt.Errorf("Couldn't allocate new node")
+	}
 	//node := &node{id: , data: [NodeDataSize]byte{}, dirty: false, pinCounter: 1}
 
 	//node := &node{id: uint64(*id), dirty: true, entries: make([]entry, 0, degree), degree: degree, children: make([]uint64, 0, degree),  pinCounter: 1}
 
-	node := newNode(uint64(*newNodeID))
-	bpm.nodesTable[*newNodeID] = *frameID
+	node := newNode(uint64(newNodeID))
+	bpm.nodesTable[newNodeID] = *frameID
 	bpm.pool[*frameID] = node
 
 	//Finally, since creation of the new node does not imply it will be used, put it directly 
 	// into the clock, since it gets created with pin counter 0. Also, since creation happens with the dirty 
 	// bit set to true, this means that it will be stored automatically by the disk manager.
-	bpm.FetchNode(*newNodeID) //sets pin counter to 1
-	bpm.UnpinNode(*newNodeID) //unpins and puts it into the clock
+	bpm.FetchNode(newNodeID) //sets pin counter to 1
+	bpm.UnpinNode(newNodeID) //unpins and puts it into the clock
 
 	// return NodeID
 	return newNodeID, nil

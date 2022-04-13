@@ -13,15 +13,15 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 			return false, err_allocation_2
 		}
 
-		n1, err_fetching_1 := bpt.bpm.FetchNode(*nodeID_1)
-		n2, err_fetching_2 := bpt.bpm.FetchNode(*nodeID_2)
+		n1, err_fetching_1 := bpt.bpm.FetchNode(nodeID_1)
+		n2, err_fetching_2 := bpt.bpm.FetchNode(nodeID_2)
 
 		if err_fetching_1 != nil {
-			bpt.bpm.UnpinNode(*nodeID_1)
+			bpt.bpm.UnpinNode(nodeID_1)
 			return false, err_fetching_1
 		}
 		if err_fetching_2 != nil {
-			bpt.bpm.UnpinNode(*nodeID_2)
+			bpt.bpm.UnpinNode(nodeID_2)
 			return false, err_fetching_2
 		}
 
@@ -37,8 +37,8 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 			return false, err
 		}
 
-		bpt.bpm.UnpinNode(*nodeID_1)
-		bpt.bpm.UnpinNode(*nodeID_2)
+		bpt.bpm.UnpinNode(nodeID_1)
+		bpt.bpm.UnpinNode(nodeID_2)
 	}
 
 	return bpt.path(bpt.root.getID(), e)
@@ -120,12 +120,12 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 			return false, err
 		}
 
-		sibling, err := bpt.bpm.FetchNode(*newNodeID)
+		sibling, err := bpt.bpm.FetchNode(newNodeID)
 
 		if err != nil {
 			bpt.bpm.UnpinNode(nodeID)
 			bpt.bpm.UnpinNode(childID)
-			bpt.bpm.UnpinNode(*newNodeID)
+			bpt.bpm.UnpinNode(newNodeID)
 			return false, err
 		}
 
@@ -133,11 +133,11 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 		if err := bpt.split(node.getID(), child.getID(), sibling.getID(), at); err != nil {
 			bpt.bpm.UnpinNode(nodeID)
 			bpt.bpm.UnpinNode(childID)
-			bpt.bpm.UnpinNode(*newNodeID)
+			bpt.bpm.UnpinNode(newNodeID)
 			return false, err
 		}
 
-		bpt.bpm.UnpinNode(*newNodeID)
+		bpt.bpm.UnpinNode(newNodeID)
 
 		if e.key >= node.entries[at].key {
 
@@ -148,7 +148,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 				bpt.bpm.UnpinNode(nodeID)
 				bpt.bpm.UnpinNode(childID)
 				bpt.bpm.UnpinNode(newChildID)
-				bpt.bpm.UnpinNode(*newNodeID)
+				bpt.bpm.UnpinNode(newNodeID)
 				return false, err
 			}
 			bpt.bpm.UnpinNode(newChildID)

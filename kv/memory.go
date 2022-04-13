@@ -80,15 +80,15 @@ func (tree *BPlusTree) allocate_old(n int) ([]*node, error) {
 	return nodes, nil
 }
 
-func (tree *BPlusTree) allocate() (*NodeID, error) {
+func (tree *BPlusTree) allocate() (NodeID, error) {
 	id, err := tree.bpm.GetNewNode()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	//Current fix until everything is implemented
-	tree.nodes[uint64(*id)], _ = tree.bpm.FetchNode(*id)
-	tree.bpm.UnpinNode(*id)
+	tree.nodes[uint64(id)], _ = tree.bpm.FetchNode(id)
+	tree.bpm.UnpinNode(id)
 
 	return id, nil
 }

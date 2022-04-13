@@ -30,7 +30,7 @@ func New() *BPlusTree {
 
 	// bpt.root = newNode(1)
 	initNodeID, _ := bpt.bpm.GetNewNode()
-	initNode, err := bpt.bpm.FetchNode(*initNodeID) //Removes it from clock
+	initNode, err := bpt.bpm.FetchNode(initNodeID) //Removes it from clock
 	
 	if err != nil {
 		panic("Couldn't init B+Tree")

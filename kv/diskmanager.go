@@ -12,7 +12,7 @@ import (
 //DiskMaxNumNodes sets the disk capacity
 const DiskMaxNodesCapacity = 50000000
 const dataFolder = "./../data/"
-const avoidStoringToDisk = false
+const avoidStoringToDisk = true
 
 // DiskManager is responsible for interacting with disk
 // type DiskManager interface {
@@ -94,13 +94,13 @@ func (d *DiskManager) WriteNode(node *node) error {
 
 
 //AllocateNode allocates one more node
-func (d *DiskManager) AllocateNode() *NodeID {
-	if d.numNode == DiskMaxNodesCapacity {
-		return nil
+func (d *DiskManager) AllocateNode() (NodeID, error) {
+	if d.numNode == DiskMaxNodesCapacity - 1 {
+		return 0, fmt.Errorf("Couldn't allocate new node")
 	}
 	nodeID := NodeID(d.numNode)
 	d.numNode = d.numNode + 1
-	return &nodeID
+	return nodeID, nil
 }
 
 //DeallocateNode removes node from disk
@@ -108,7 +108,6 @@ func (d *DiskManager) DeallocateNode(nodeID NodeID) {
 	delete(d.nodes, nodeID)
 }
 
-//NewDiskManager returns a in-memory mock of disk manager
 func NewDiskManager() *DiskManager {
 	return &DiskManager{1, make(map[NodeID]*node)}
 }
