@@ -8,7 +8,7 @@ general status:
 - the code base is currently a bit messy... but that's alright, as long as it works. we can always improve once it's working
 - Finally, you might have noticed that I changed quite a lot inside of memory.go and your findsequentialspace() part is not used. You were right today, this belongs to the disk part. I will, at some point, add it there, once everything is working. But currently I'm all for a working product, before doing optimization. The code is still there, I didn't delete it!
 
-here are some instructions that I need from you: 
+here are some instructions that I need you to do: 
 2. is more important than 1. (1. could make it more efficient but 2. is crucial for it to work correctly...)
 
 1. I changed some function signatures of yours in the bplustree.go file. Usually, we don't want to pass pointers to any function, 
@@ -43,4 +43,4 @@ func (p *node) split(n, sibling *node, i int) error {
 
 And I don't know why this is happening. I noticed that (see picture) in the ReadNode() method: If I implement the real "disk" by storing and unmarshalling, then I get this error. However, if I just comment the real part and uncomment the "MOCK DISK" part, then it works without any issue. 
 It happens at insertion, when I insert stuff. Can you think of any reason why this is happening? Also, I didn't touch anything of unmarshalling/marshalling functions and also I didn't add any new field to the nodes.
-
+And finally, it yields also an error when updating... but I think this is linked together. When we fix this, the other will be fixed, too.
