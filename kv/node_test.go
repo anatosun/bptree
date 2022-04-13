@@ -20,7 +20,7 @@ func TestMarshalUnmarshalNode(t *testing.T) {
 	for i := 0; !node.full(); i++ {
 		entry := entry{key: Key(i + offset), value: Value([10]byte{byte(i + offset)})}
 		node.insertEntryAt(i, entry)
-		node.insertChildAt(i, newNode(children[i], degree))
+		node.insertChildAt(i, newNode(children[i], degree).id)
 	}
 
 	data, err := node.MarshalBinary()

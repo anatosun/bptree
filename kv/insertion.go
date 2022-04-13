@@ -1,7 +1,6 @@
 package kv
 
-
-import(
+import (
 	"fmt"
 )
 
@@ -39,7 +38,7 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 		bpt.root = newRoot
 		bpt.meta.root = uint32(newRoot.id)
 
-		if err := newRoot.split(oldRoot, rightSibling, 0); err != nil {
+		if err := bpt.split(newRoot, oldRoot, rightSibling, 0); err != nil {
 			return false, err
 		}
 
@@ -103,11 +102,10 @@ func (bpt *BPlusTree) insertLeaf(nodeID NodeID, e entry) (bool, error) {
 func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
 	node, err := bpt.bpm.FetchNode(nodeID)
-	if err != nil { 
+	if err != nil {
 		bpt.bpm.UnpinNode(nodeID)
 		return false, err
 	}
-
 
 	at, found := node.search(e.key)
 	if found {
@@ -116,7 +114,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
 	childID := NodeID(node.children[at])
 	child, err := bpt.bpm.FetchNode(childID)
-	if err != nil { 
+	if err != nil {
 		bpt.bpm.UnpinNode(nodeID)
 		bpt.bpm.UnpinNode(childID)
 		return false, err
@@ -124,19 +122,20 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
 	if child.full() {
 		newNodeID, err := bpt.allocate()
-		if err != nil { return false, err }
+		if err != nil {
+			return false, err
+		}
 
 		sibling, err := bpt.bpm.FetchNode(*newNodeID)
 
-		if err != nil { 
+		if err != nil {
 			bpt.bpm.UnpinNode(nodeID)
 			bpt.bpm.UnpinNode(childID)
 			bpt.bpm.UnpinNode(*newNodeID)
 			return false, err
 		}
 
-
-		if err := node.split(child, sibling, at); err != nil {
+		if err := bpt.split(node, child, sibling, at); err != nil {
 			bpt.bpm.UnpinNode(nodeID)
 			bpt.bpm.UnpinNode(childID)
 			bpt.bpm.UnpinNode(*newNodeID)
@@ -149,7 +148,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 			newChildID := NodeID(node.children[at+1])
 			child, err = bpt.bpm.FetchNode(newChildID)
 
-			if err != nil { 
+			if err != nil {
 				bpt.bpm.UnpinNode(nodeID)
 				bpt.bpm.UnpinNode(childID)
 				bpt.bpm.UnpinNode(newChildID)
@@ -165,7 +164,6 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
 	return bpt.path(child.getID(), e)
 }
-
 
 func dummyfmt3() {
 	fmt.Println("x")

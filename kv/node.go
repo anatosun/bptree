@@ -11,13 +11,13 @@ const pageSize = 4 * 1024 // 4KB
 type NodeID uint64 //todo: replace id uint64 through NodeID throughout the whole code
 
 type node struct {
-	id       uint64
-	dirty    bool
-	degree   uint8
-	next     uint64
-	prev     uint64
-	children []uint64
-	entries  []entry
+	id         uint64
+	dirty      bool
+	degree     uint8
+	next       uint64
+	prev       uint64
+	children   []uint64
+	entries    []entry
 	pinCounter uint64
 }
 
@@ -26,19 +26,19 @@ func newNode(id uint64, degree uint8) *node {
 }
 
 // Convert node to nodeID, fetch it using bpm
-func (n *node) insertChildAt(at int, child *node) error {
+func (n *node) insertChildAt(at int, child uint64) error {
 
 	// FX
 	// Pass nodeID and siblingID and fetch it like this:
 	// n, err := bpt.bpm.FetchNode(nodeID)
-	// if err != nil { 
+	// if err != nil {
 	// 	bpt.bpm.UnpinNode(nodeID)
 	// 	return false, err
 	// }
-	
+
 	prior_size := len(n.children)
 	n.dirty = true
-	n.children = append(n.children[0:at], append([]uint64{child.id}, n.children[at:]...)...)
+	n.children = append(n.children[0:at], append([]uint64{child}, n.children[at:]...)...)
 	current_size := len(n.children)
 
 	if prior_size+1 != current_size {
@@ -55,64 +55,6 @@ func (n *node) insertChildAt(at int, child *node) error {
 
 func (n *node) full() bool {
 	return len(n.entries) == ((2 * int(n.degree)) - 1)
-}
-
-// dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
-// Convert node to nodeID, fetch it using bpm
-func (p *node) splitNode(n, sibling *node, i int) error {
-
-	// FX
-	// Pass nodeID and siblingID and fetch it like this:
-	// n, err := bpt.bpm.FetchNode(nodeID)
-	// if err != nil { 
-	// 	bpt.bpm.UnpinNode(nodeID)
-	// 	return false, err
-	// }
-
-	parentKey := n.entries[p.degree-1]
-
-	sibling.entries = make([]entry, p.degree-1)
-	copy(sibling.entries, n.entries[:p.degree])
-	n.entries = n.entries[p.degree:]
-
-	sibling.children = make([]uint64, p.degree)
-	copy(sibling.children, n.children[:p.degree])
-	n.children = n.children[p.degree:]
-
-	err := p.insertChildAt(i, sibling)
-	if err != nil {
-		return err
-	}
-
-	err = p.insertEntryAt(i, parentKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-// Convert node to nodeID, fetch it using bpm
-func (p *node) split(n, sibling *node, i int) error {
-
-	// FX
-	// Pass nodeID and siblingID and fetch it like this:
-	// n, err := bpt.bpm.FetchNode(nodeID)
-	// if err != nil { 
-	// 	bpt.bpm.UnpinNode(nodeID)
-	// 	return false, err
-	// }
-
-	p.dirty = true
-	n.dirty = true
-	sibling.dirty = true
-
-	if n.isLeaf() {
-		return p.splitLeaf(n, sibling, i)
-	}
-
-	return p.splitNode(n, sibling, i)
 }
 
 // the two functions below implement both the BinaryMarshaler and the BinaryUnmarshaler interfaces
@@ -194,7 +136,6 @@ func (n *node) UnmarshalBinary(data []byte) error {
 
 	return nil
 }
-
 
 func dummyfmt23() {
 	fmt.Println("x")

@@ -3,7 +3,7 @@
 // binary data and value is uint64.
 package kv
 
-import(
+import (
 	"fmt"
 )
 
@@ -16,6 +16,7 @@ type BPlusTree struct {
 }
 
 const preaollocation = 1000 * 1000
+
 // const preaollocation = 10
 
 func New(degree uint8) *BPlusTree {
@@ -25,7 +26,6 @@ func New(degree uint8) *BPlusTree {
 	disk := NewDiskManager(0)
 	bpm := NewBufferPoolManager(disk, clock)
 	bpt := &BPlusTree{degree: degree}
-
 
 	//Bind
 	bpt.bpm = bpm
@@ -56,7 +56,7 @@ func New(degree uint8) *BPlusTree {
 	for i := range bpt.meta.free {
 		bpt.meta.free[i] = uint64(i + 2)
 	}
-	
+
 	//Usually, you would unpin now every fetched node. However, the root should always stay in memory
 	// So nothing to do here.
 
@@ -85,7 +85,6 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
 	//TODO/FX: If we want to be consistent with findsequentialfreespace,
 	// then this needs to add the removed node back to the list
-
 
 	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
 		return nil, err
@@ -139,7 +138,7 @@ func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child *NodeID, at int, fou
 
 	node, err := bpt.bpm.FetchNode(nodeID)
 	if err != nil {
-		return nil, 0, false, err 
+		return nil, 0, false, err
 	}
 
 	at, found = node.search(key)
@@ -160,4 +159,94 @@ func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child *NodeID, at int, fou
 
 func dummyfmt() {
 	fmt.Println("x")
+}
+
+func (bpt *BPlusTree) splitLeaf(p, n, sibling *node, i int) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil {
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+
+	sibling.next = n.next
+	sibling.prev = n.id
+	n.next = sibling.id
+
+	sibling.entries = make([]entry, p.degree-1)
+	copy(sibling.entries, n.entries[p.degree:])
+	n.entries = n.entries[:p.degree]
+
+	err := p.insertChildAt(i+1, sibling.id)
+
+	if err != nil {
+		return err
+	}
+	err = p.insertEntryAt(i, sibling.entries[0])
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
+// Convert node to nodeID, fetch it using bpm
+func (bpt *BPlusTree) splitNode(p, n, sibling *node, i int) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil {
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+
+	parentKey := n.entries[p.degree-1]
+
+	sibling.entries = make([]entry, p.degree-1)
+	copy(sibling.entries, n.entries[:p.degree])
+	n.entries = n.entries[p.degree:]
+
+	sibling.children = make([]uint64, p.degree)
+	copy(sibling.children, n.children[:p.degree])
+	n.children = n.children[p.degree:]
+
+	err := p.insertChildAt(i, sibling.id)
+	if err != nil {
+		return err
+	}
+
+	err = p.insertEntryAt(i, parentKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// Convert node to nodeID, fetch it using bpm
+func (bpt *BPlusTree) split(p, n, sibling *node, i int) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil {
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+
+	p.dirty = true
+	n.dirty = true
+	sibling.dirty = true
+
+	if n.isLeaf() {
+		return bpt.splitLeaf(p, n, sibling, i)
+	}
+
+	return bpt.splitNode(p, n, sibling, i)
 }

@@ -1,6 +1,6 @@
 package kv
 
-import(
+import (
 	"fmt"
 )
 
@@ -18,7 +18,6 @@ func (n *node) insertEntryAt(at int, e entry) error {
 		return &InsertionError{Type: "child", Value: e, Size: current_size, Position: at, Capacity: cap(n.entries)}
 	}
 
-	
 	if len(n.entries) > ((2 * int(n.degree)) - 1) {
 
 		return &OverflowError{Type: "entry", Max: ((2 * int(n.degree)) - 1), Actual: current_size}
@@ -78,38 +77,6 @@ func (n *node) search(key Key) (int, bool) {
 // dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
 
 // Convert node to nodeID, fetch it using bpm
-func (p *node) splitLeaf(n, sibling *node, i int) error {
-
-	// FX
-	// Pass nodeID and siblingID and fetch it like this:
-	// n, err := bpt.bpm.FetchNode(nodeID)
-	// if err != nil { 
-	// 	bpt.bpm.UnpinNode(nodeID)
-	// 	return false, err
-	// }
-
-	sibling.next = n.next
-	sibling.prev = n.id
-	n.next = sibling.id
-
-	sibling.entries = make([]entry, p.degree-1)
-	copy(sibling.entries, n.entries[p.degree:])
-	n.entries = n.entries[:p.degree]
-
-	err := p.insertChildAt(i+1, sibling)
-
-	if err != nil {
-		return err
-	}
-	err = p.insertEntryAt(i, sibling.entries[0])
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
 
 func dummyfmt234() {
 	fmt.Println("x")
