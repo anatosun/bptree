@@ -9,7 +9,7 @@ import (
 var store storage
 var array []int
 
-const size = 10000000
+const size = 100000
 
 func TestInit(t *testing.T) {
 	store = New()
