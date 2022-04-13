@@ -14,20 +14,26 @@ type BPlusTree struct {
 	nodes  map[uint64]*node // node cache to avoid IO
 	meta   metadata
 	root   *node
+	bpm    *BufferPoolManager
 }
 
 const preaollocation = 1000 * 1000
 
 func New() *BPlusTree {
 
-	// clock := NewClockPolicy(BufferPoolCapacity)
-	// disk := NewDiskManager(0)
-	// bpm := NewBufferPoolManager(disk, clock)
+	clock := NewClockPolicy(BufferPoolCapacity)
+	disk := NewDiskManager(0)
+	bpm := NewBufferPoolManager(disk, clock)
 
 	bpt := &BPlusTree{}
-	// bpt.bpm = bpm
+	bpt.bpm = bpm
 	bpt.nodes = make(map[uint64]*node)
-	bpt.root = newNode(1)
+	initNodeID, _ := bpt.bpm.GetNewNode()
+	initNode, err := bpt.bpm.FetchNode(*initNodeID) //Removes it from clock
+	if err != nil {
+		panic("Couldn't init B+Tree")
+	}
+	bpt.root = initNode
 	bpt.nodes[bpt.root.id] = bpt.root
 
 	bpt.meta = metadata{
@@ -35,7 +41,7 @@ func New() *BPlusTree {
 		size:     0,
 		root:     1,
 		pageSize: uint32(4096),
-		keySize:  uint64(64),
+		keySize:  uint64(8),
 	}
 
 	bpt.meta.free = make([]uint64, preaollocation)
@@ -44,7 +50,7 @@ func New() *BPlusTree {
 		bpt.meta.free[i] = uint64(i + 2)
 	}
 
-	bpt.computeDegree(4096)
+	bpt.computeDegree()
 
 	return bpt
 }
@@ -83,7 +89,7 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 		}
 		bpt.meta.size--
 		// unpin previous
-		// err = bpt.bpm.UnpinNode(node.id)
+		err = bpt.bpm.UnpinNode(NodeID(node.id))
 		return &e.value, err
 	}
 
@@ -97,7 +103,7 @@ func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 		return nil, err
 	} else if found {
 		// unpin previous before returning value
-		// err = bpt.bpm.UnpinNode(n.id)
+		err = bpt.bpm.UnpinNode(NodeID(n.id))
 		return &n.entries[at].value, err
 	}
 
@@ -117,15 +123,15 @@ func (bpt *BPlusTree) search(n *node, key Key) (child *node, at int, found bool,
 	if found {
 		at++
 	}
-	child, err = bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
+	child, err = bpt.bpm.FetchNode(NodeID(n.children[at])) //TODO: After no longer in use, unpin
 	if err != nil {
 		return nil, 0, false, err
 	}
 	// unpin previous before iterating over the next
-	// err = bpt.bpm.UnpinNode(n.id)
-	// if err != nil {
-	// 	return n, at, false, err
-	// }
+	err = bpt.bpm.UnpinNode(NodeID(n.id))
+	if err != nil {
+		return n, at, false, err
+	}
 	return bpt.search(child, key)
 }
 
@@ -189,7 +195,7 @@ func (bpt *BPlusTree) validate(nodes []*node) error {
 	return nil
 }
 
-func (bpt *BPlusTree) computeDegree(pageSz int) error {
+func (bpt *BPlusTree) computeDegree() error {
 	leaf := os.Getpagesize() - nodeHeaderLen()
 	node := os.Getpagesize() - nodeHeaderLen()
 
