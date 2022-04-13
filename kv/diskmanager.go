@@ -14,18 +14,10 @@ const DiskMaxNodesCapacity = 50000000
 const dataFolder = "./../data/"
 const avoidStoringToDisk = true
 
-// DiskManager is responsible for interacting with disk
-// type DiskManager interface {
-// 	ReadNode(nodeID NodeID) (*node, error)
-// 	WriteNode(*node) error
-// 	AllocateNode() *NodeID
-// 	DeallocateNode(nodeID NodeID)
-// }
-
 //DiskManager is a memory mock for disk manager
 type DiskManager struct {
-	numNode 	NodeID
-	nodes   	map[NodeID]*node
+	numNode NodeID
+	nodes   map[NodeID]*node
 }
 
 //ReadNode reads a node from nodes
@@ -34,16 +26,6 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 	if avoidStoringToDisk {
 		//MOCK DISK IN MEMORY
 		if node2, ok := d.nodes[nodeID]; ok {
-			// node2.dirty = true
-
-			// n1s := fmt.Sprintf("%v", node)
-			// n2s := fmt.Sprintf("%v", node2)
-			// if n1s != n2s {
-			// 	fmt.Printf("disk  =%v\n",n1s)
-			// 	fmt.Printf("memory=%v\n",n2s)
-			// 	fmt.Println("MISMATCH READcING")
-			// }
-			
 			return node2, nil
 		}
 
@@ -55,9 +37,9 @@ func (d *DiskManager) ReadNode(nodeID NodeID) (*node, error) {
 
 	dat, err := os.ReadFile(loc)
 
-    if err != nil {
-    	return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
 	node := newNode(uint64(nodeID))
 
@@ -84,18 +66,17 @@ func (d *DiskManager) WriteNode(node *node) error {
 
 	loc := dataFolder + fmt.Sprint(node.getID())
 
-    err = os.WriteFile(loc, bin, 0644)
-    if err != nil {
-    	return err
-    }
+	err = os.WriteFile(loc, bin, 0644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-
 //AllocateNode allocates one more node
 func (d *DiskManager) AllocateNode() (NodeID, error) {
-	if d.numNode == DiskMaxNodesCapacity - 1 {
+	if d.numNode == DiskMaxNodesCapacity-1 {
 		return 0, fmt.Errorf("Couldn't allocate new node")
 	}
 	nodeID := NodeID(d.numNode)
@@ -104,8 +85,14 @@ func (d *DiskManager) AllocateNode() (NodeID, error) {
 }
 
 //DeallocateNode removes node from disk
-func (d *DiskManager) DeallocateNode(nodeID NodeID) {
-	delete(d.nodes, nodeID)
+func (d *DiskManager) DeallocateNode(nodeID NodeID) error {
+	loc := dataFolder + fmt.Sprint(nodeID)
+
+	e := os.Remove(loc)
+	if e != nil {
+		return fmt.Errorf("Couldn't delete node")
+	}
+	return nil
 }
 
 func NewDiskManager() *DiskManager {

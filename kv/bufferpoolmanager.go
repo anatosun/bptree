@@ -36,7 +36,7 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 	// Victimized, i.e. not from free list
 	if !isFromFreeFramesList {
 		node := bpm.pool[frameID]
-		if node.IsDirty(){ //TODO: Fix this mess
+		if node.IsDirty() { //TODO: Fix this mess
 			// save to disk
 			bpm.diskManager.WriteNode(node)
 			node.dirty = false
@@ -71,8 +71,8 @@ func (bpm *BufferPoolManager) GetNewNode() (NodeID, error) {
 	bpm.nodesTable[newNodeID] = frameID
 	bpm.pool[frameID] = node
 
-	//Finally, since creation of the new node does not imply it will be used, put it directly 
-	// into the clock, since it gets created with pin counter 0. Also, since creation happens with the dirty 
+	//Finally, since creation of the new node does not imply it will be used, put it directly
+	// into the clock, since it gets created with pin counter 0. Also, since creation happens with the dirty
 	// bit set to true, this means that it will be stored automatically by the disk manager.
 	bpm.FetchNode(newNodeID) //sets pin counter to 1
 	bpm.UnpinNode(newNodeID) //unpins and puts it into the clock
@@ -206,7 +206,10 @@ func (bpm *BufferPoolManager) DeleteNode(nodeID NodeID) error {
 	}
 
 	delete(bpm.nodesTable, NodeID(node.id))
-	bpm.diskManager.DeallocateNode(nodeID)
+	err := bpm.diskManager.DeallocateNode(nodeID)
+	if err != nil {
+		return err
+	}
 	bpm.freeFramesList = append(bpm.freeFramesList, frameID)
 
 	// Note: The node will still stay inside of the nodesTable until it has been replaced
@@ -221,7 +224,7 @@ func (bpm *BufferPoolManager) FlushNode(nodeID NodeID) bool {
 	if found {
 		node := bpm.pool[frameID]
 		bpm.diskManager.WriteNode(node) //TODO: Add here marshalling
-		node.dirty = false //written to disk, i.e. up to date
+		node.dirty = false              //written to disk, i.e. up to date
 		return true
 	}
 	return false
