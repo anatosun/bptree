@@ -59,8 +59,11 @@ func (meta metadata) MarshalBinary() ([]byte, error) {
 	// }
 
 	for _, free := range meta.free {
-		binary.LittleEndian.PutUint32(buffer[cursor:cursor+4], uint32(free))
-		cursor += 4
+		if cursor > len(buffer) {
+			return buffer, nil
+		}
+		binary.LittleEndian.PutUint64(buffer[cursor:cursor+8], free)
+		cursor += 8
 	}
 
 	return buffer, nil
@@ -83,10 +86,10 @@ func (meta *metadata) UnmarshalBinary(data []byte) error {
 	meta.root = binary.LittleEndian.Uint64(data[16:24])
 	space := binary.LittleEndian.Uint32(data[24:28])
 	meta.free = make([]uint64, space)
-	cursor := 24
+	cursor := 28
 	for i := 0; i < int(space); i++ {
-		meta.free[i] = uint64(binary.LittleEndian.Uint32(data[cursor : cursor+4]))
-		cursor += 4
+		meta.free[i] = binary.LittleEndian.Uint64(data[cursor : cursor+8])
+		cursor += 8
 	}
 	return nil
 }
