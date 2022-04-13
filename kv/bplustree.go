@@ -28,7 +28,6 @@ func New() *BPlusTree {
 	bpt.bpm = bpm
 	bpt.nodes = make(map[uint64]*node)
 
-	// bpt.root = newNode(1)
 	initNodeID, _ := bpt.bpm.GetNewNode()
 	initNode, err := bpt.bpm.FetchNode(initNodeID) //Removes it from clock
 
@@ -37,7 +36,6 @@ func New() *BPlusTree {
 	}
 
 	bpt.root = initNode
-	//fmt.Printf("new root=%v\nold root=%v\n", initNode, bpt.root)
 
 	bpt.nodes[bpt.root.id] = bpt.root //TODO: eventually remove this if no longer needed
 
