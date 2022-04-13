@@ -181,9 +181,9 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 	// sibling.dirty = true
 
 	if n.isLeaf() {
-		bpt.splitLeaf(p.getID(), n.getID(), sibling.getID(), i)
+		bpt.splitLeaf(p, n, sibling, i)
 	} else {
-		bpt.splitNode(p.getID(), n.getID(), sibling.getID(), i)
+		bpt.splitNode(p, n, sibling, i)
 	}
 	err = bpt.validate([]*node{p, n, sibling})
 
@@ -201,26 +201,7 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 	return nil
 }
 
-func (bpt *BPlusTree) splitNode(leftID, middleID, rightID NodeID, i int) error {
-
-	left, err := bpt.bpm.FetchNode(leftID)
-	if err != nil {
-		bpt.bpm.UnpinNode(leftID, false)
-		return err
-	}
-
-	middle, err := bpt.bpm.FetchNode(middleID)
-	if err != nil {
-		bpt.bpm.UnpinNode(middleID, false)
-		return err
-	}
-
-	right, err := bpt.bpm.FetchNode(rightID)
-	if err != nil {
-		bpt.bpm.UnpinNode(rightID, false)
-		return err
-	}
-
+func (bpt *BPlusTree) splitNode(left, middle, right *node, i int) error {
 	parentKey := middle.entries[bpt.fanout-1]
 	right.entries = make([]entry, bpt.fanout-1)
 	copy(right.entries, middle.entries[:bpt.fanout])
@@ -228,48 +209,18 @@ func (bpt *BPlusTree) splitNode(leftID, middleID, rightID NodeID, i int) error {
 	right.children = make([]uint64, bpt.fanout)
 	copy(right.children, middle.children[:bpt.fanout])
 	middle.children = middle.children[bpt.fanout:]
-	err = left.insertChildAt(i, right)
+	err := left.insertChildAt(i, right)
 	if err != nil {
-		bpt.bpm.UnpinNode(leftID, true)
-		bpt.bpm.UnpinNode(middleID, true)
-		bpt.bpm.UnpinNode(rightID, true)
 		return err
 	}
 	err = left.insertEntryAt(i, parentKey)
 	if err != nil {
-		bpt.bpm.UnpinNode(leftID, true)
-		bpt.bpm.UnpinNode(middleID, true)
-		bpt.bpm.UnpinNode(rightID, true)
 		return err
 	}
-
-	bpt.bpm.UnpinNode(leftID, true)
-	bpt.bpm.UnpinNode(middleID, true)
-	bpt.bpm.UnpinNode(rightID, true)
-
 	return nil
 }
 
-func (bpt *BPlusTree) splitLeaf(leftID, middleID, rightID NodeID, i int) error {
-
-	left, err := bpt.bpm.FetchNode(leftID)
-	if err != nil {
-		bpt.bpm.UnpinNode(leftID, false)
-		return err
-	}
-
-	middle, err := bpt.bpm.FetchNode(middleID)
-	if err != nil {
-		bpt.bpm.UnpinNode(middleID, false)
-		return err
-	}
-
-	right, err := bpt.bpm.FetchNode(rightID)
-	if err != nil {
-		bpt.bpm.UnpinNode(rightID, false)
-		return err
-	}
-
+func (bpt *BPlusTree) splitLeaf(left, middle, right *node, i int) error {
 	right.next = middle.next
 	right.prev = middle.id
 	middle.next = right.id
@@ -278,24 +229,14 @@ func (bpt *BPlusTree) splitLeaf(leftID, middleID, rightID NodeID, i int) error {
 	copy(right.entries, middle.entries[bpt.order:])
 	middle.entries = middle.entries[:bpt.order]
 
-	err = left.insertChildAt(i+1, right)
+	err := left.insertChildAt(i+1, right)
 	if err != nil {
-		bpt.bpm.UnpinNode(leftID, true)
-		bpt.bpm.UnpinNode(middleID, true)
-		bpt.bpm.UnpinNode(rightID, true)
 		return err
 	}
 	err = left.insertEntryAt(i, right.entries[0])
 	if err != nil {
-		bpt.bpm.UnpinNode(leftID, true)
-		bpt.bpm.UnpinNode(middleID, true)
-		bpt.bpm.UnpinNode(rightID, true)
 		return err
 	}
-
-	bpt.bpm.UnpinNode(leftID, true)
-	bpt.bpm.UnpinNode(middleID, true)
-	bpt.bpm.UnpinNode(rightID, true)
 	return nil
 
 }
