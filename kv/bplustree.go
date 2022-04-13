@@ -83,9 +83,6 @@ func (bpt *BPlusTree) Insert(key Key, value Value) (success bool, err error) {
 
 func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 
-	//TODO/FX: If we want to be consistent with findsequentialfreespace,
-	// then this needs to add the removed node back to the list
-
 	if nodeID, at, found, err := bpt.search(bpt.root.getID(), key); err != nil {
 		return nil, err
 	} else if found {
@@ -175,10 +172,6 @@ func (bpt *BPlusTree) split(pID, nID NodeID, siblingID NodeID, i int) error {
 		bpt.bpm.UnpinNode(siblingID, false)
 		return err
 	}
-
-	// p.dirty = true
-	// n.dirty = true
-	// sibling.dirty = true
 
 	if n.isLeaf() {
 		bpt.splitLeaf(p, n, sibling, i)
