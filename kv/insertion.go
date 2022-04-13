@@ -11,37 +11,26 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 
 	if bpt.root.full() {
 
-		nodeID_1, err1 := bpt.allocate2()
-		nodeID_2, err2 := bpt.allocate2()
+		nodeID_1, err_allocation_1 := bpt.allocate2()
+		nodeID_2, err_allocation_2 := bpt.allocate2()
 
-		// if err != nil {
-		if err1 != nil {
-			return false, err1
+		if err_allocation_1 != nil {
+			return false, err_allocation_1
 		}
-		if err2 != nil {
-			return false, err2
-		}
-
-		n1, err1 := bpt.bpm.FetchNode(*nodeID_1)
-		n2, err2 := bpt.bpm.FetchNode(*nodeID_2)
-
-		if err1 != nil {
-			return false, err1
-		}
-		if err2 != nil {
-			return false, err2
+		if err_allocation_2 != nil {
+			return false, err_allocation_2
 		}
 
-		// nodes, err := bpt.allocate(2)
-		// if err != nil {
-		// 	return false, err
-		// }
+		n1, err_fetching_1 := bpt.bpm.FetchNode(*nodeID_1)
+		n2, err_fetching_2 := bpt.bpm.FetchNode(*nodeID_2)
 
-		// fmt.Printf("node1=%v, node2=%v\n", n1, n2)
-		// fmt.Printf("node3=%v, node4=%v\n", nodes[0], nodes[1])
+		if err_fetching_1 != nil {
+			return false, err_fetching_1
+		}
+		if err_fetching_2 != nil {
+			return false, err_fetching_2
+		}
 
-		// newRoot := nodes[0]
-		// rightSibling := nodes[1]
 		newRoot := n1
 		rightSibling := n2
 		oldRoot := bpt.root
@@ -54,95 +43,124 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 			return false, err
 		}
 
-		// Unpin nodes, since no longer in use
-		// for _, node := range nodes {
-		// //	fmt.Println("Unpin node")
-		// 	bpt.bpm.UnpinNode(NodeID(node.getID()))
-		// }
 		bpt.bpm.UnpinNode(*nodeID_1)
 		bpt.bpm.UnpinNode(*nodeID_2)
 
 	}
 
-	return bpt.path(bpt.root, e)
+	return bpt.path(bpt.root.getID(), e)
 }
 
-func (bpt *BPlusTree) path(n *node, e entry) (bool, error) {
-	if n.isLeaf() {
-		return bpt.insertLeaf(n, e)
+func (bpt *BPlusTree) path(nodeID NodeID, e entry) (bool, error) {
+
+	node, err := bpt.bpm.FetchNode(nodeID)
+	if err != nil {
+		bpt.bpm.UnpinNode(nodeID)
+		return false, err
 	}
 
-	return bpt.insertInternal(n, e)
+	if node.isLeaf() {
+		bpt.bpm.UnpinNode(nodeID)
+		return bpt.insertLeaf(nodeID, e)
+	}
+
+	bpt.bpm.UnpinNode(nodeID)
+	return bpt.insertInternal(nodeID, e)
 }
 
-func (bpt *BPlusTree) insertLeaf(n *node, e entry) (bool, error) {
-	at, found := n.search(e.key)
+func (bpt *BPlusTree) insertLeaf(nodeID NodeID, e entry) (bool, error) {
+
+	node, err := bpt.bpm.FetchNode(nodeID)
+	if err != nil { return false, err }
+
+	at, found := node.search(e.key)
 
 	if found {
-		err := n.update(at, e.value)
+
+		err := node.update(at, e.value)
 		if err != nil {
-			// attempt to unpin node before returning the error
-			// bpt.bpm.UnpinNode(NodeID(n.id))
+			bpt.bpm.UnpinNode(nodeID)
 			return false, err
 		}
-		// err = bpt.bpm.UnpinNode(NodeID(n.id))
+
+		bpt.bpm.UnpinNode(nodeID)
+		return false, err //FX: Shouldn't this return true, nil?
+	}
+
+	err = node.insertEntryAt(at, e)
+	if err != nil {
+		bpt.bpm.UnpinNode(nodeID)
 		return false, err
 	}
 
-	err := n.insertEntryAt(at, e)
-	if err != nil {
-		// attempt to unpin node before returning the error
-		// bpt.bpm.UnpinNode(NodeID(n.id))
-		return false, err
-	}
-	// unpin the node when the insertion has take place
-	// err = bpt.bpm.UnpinNode(NodeID(n.id))
+	bpt.bpm.UnpinNode(nodeID)
 	return true, err
 }
 
-func (bpt *BPlusTree) insertInternal(n *node, e entry) (bool, error) {
+func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 
-	at, found := n.search(e.key)
+	node, err := bpt.bpm.FetchNode(nodeID)
+	if err != nil { 
+		bpt.bpm.UnpinNode(nodeID)
+		return false, err
+	}
+
+
+	at, found := node.search(e.key)
 	if found {
 		at++
 	}
 
-	child, err := bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
-	if err != nil {
+	childID := NodeID(node.children[at])
+	child, err := bpt.bpm.FetchNode(childID)
+	if err != nil { 
+		bpt.bpm.UnpinNode(nodeID)
+		bpt.bpm.UnpinNode(childID)
 		return false, err
 	}
 
 	if child.full() {
-		// nodes, err := bpt.allocate(1)
-		nodeID, err := bpt.allocate2()
-		if err != nil {
-			return false, err
-		}
-		// sibling := nodes[0]
-		sibling, err := bpt.bpm.FetchNode(*nodeID)
-		if err != nil {
+		newNodeID, err := bpt.allocate2()
+		if err != nil { return false, err }
+
+		sibling, err := bpt.bpm.FetchNode(*newNodeID)
+
+		if err != nil { 
+			bpt.bpm.UnpinNode(nodeID)
+			bpt.bpm.UnpinNode(childID)
+			bpt.bpm.UnpinNode(*newNodeID)
 			return false, err
 		}
 
-		if err := n.split(child, sibling, at); err != nil {
+
+		if err := node.split(child, sibling, at); err != nil {
+			bpt.bpm.UnpinNode(nodeID)
+			bpt.bpm.UnpinNode(childID)
+			bpt.bpm.UnpinNode(*newNodeID)
 			return false, err
 		}
-		bpt.bpm.UnpinNode(*nodeID)
 
-		if e.key >= n.entries[at].key {
-			child, err = bpt.nodeRef(n.children[at+1]) //TODO: After no longer in use, unpin
-			if err != nil {
+		bpt.bpm.UnpinNode(*newNodeID)
+
+		if e.key >= node.entries[at].key {
+			newChildID := NodeID(node.children[at+1])
+			child, err = bpt.bpm.FetchNode(newChildID)
+
+			if err != nil { 
+				bpt.bpm.UnpinNode(nodeID)
+				bpt.bpm.UnpinNode(childID)
+				bpt.bpm.UnpinNode(newChildID)
+				bpt.bpm.UnpinNode(*newNodeID)
 				return false, err
 			}
+			bpt.bpm.UnpinNode(newChildID)
 		}
 	}
 
-	// err = bpt.bpm.UnpinNode(NodeID(node.id))
-	// if err != nil {
-	// 	return false, err
-	// }
+	bpt.bpm.UnpinNode(nodeID)
+	bpt.bpm.UnpinNode(childID)
 
-	return bpt.path(child, e)
+	return bpt.path(child.getID(), e)
 }
 
 
