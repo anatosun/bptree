@@ -50,7 +50,7 @@ func New() *BPlusTree {
 		bpt.meta.free[i] = uint64(i + 2)
 	}
 
-	bpt.computeDegree()
+	bpt.fillDegrees()
 
 	return bpt
 }
@@ -84,7 +84,7 @@ func (bpt *BPlusTree) Remove(key Key) (value *Value, err error) {
 		e, err := node.deleteEntryAt(at)
 		if err != nil {
 			// attempt to unpin node before returning the error
-			// bpt.bpm.UnpinNode(node.id)
+			bpt.bpm.UnpinNode(NodeID(node.id))
 			return nil, err
 		}
 		bpt.meta.size--
@@ -141,38 +141,55 @@ func (bpt *BPlusTree) split(p, n, sibling *node, i int) error {
 	sibling.dirty = true
 
 	if len(n.children) == 0 {
-		// split leaf node. use 'sibling' as the right node for 'n'.
-		sibling.next = n.next
-		sibling.prev = n.id
-		n.next = sibling.id
-
-		sibling.entries = make([]entry, bpt.order-1)
-		copy(sibling.entries, n.entries[bpt.order:])
-		n.entries = n.entries[:bpt.order]
-
-		p.insertChildAt(i+1, sibling)
-		p.insertEntryAt(i, sibling.entries[0])
+		bpt.splitLeaf(p, n, sibling, i)
 	} else {
-		// split internal node. use 'sibling' as left node for 'n'.
-		parentKey := n.entries[bpt.fanout-1]
-
-		sibling.entries = make([]entry, bpt.fanout-1)
-		copy(sibling.entries, n.entries[:bpt.fanout])
-		n.entries = n.entries[bpt.fanout:]
-
-		sibling.children = make([]uint64, bpt.fanout)
-		copy(sibling.children, n.children[:bpt.fanout])
-		n.children = n.children[bpt.fanout:]
-
-		p.insertChildAt(i, sibling)
-		p.insertEntryAt(i, parentKey)
-
+		bpt.splitNode(p, n, sibling, i)
 	}
 	err := bpt.validate([]*node{p, n, sibling})
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (bpt *BPlusTree) splitNode(p, n, sibling *node, i int) error {
+	parentKey := n.entries[bpt.fanout-1]
+	sibling.entries = make([]entry, bpt.fanout-1)
+	copy(sibling.entries, n.entries[:bpt.fanout])
+	n.entries = n.entries[bpt.fanout:]
+	sibling.children = make([]uint64, bpt.fanout)
+	copy(sibling.children, n.children[:bpt.fanout])
+	n.children = n.children[bpt.fanout:]
+	err := p.insertChildAt(i, sibling)
+	if err != nil {
+		return err
+	}
+	err = p.insertEntryAt(i, parentKey)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bpt *BPlusTree) splitLeaf(p, n, sibling *node, i int) error {
+	sibling.next = n.next
+	sibling.prev = n.id
+	n.next = sibling.id
+
+	sibling.entries = make([]entry, bpt.order-1)
+	copy(sibling.entries, n.entries[bpt.order:])
+	n.entries = n.entries[:bpt.order]
+
+	err := p.insertChildAt(i+1, sibling)
+	if err != nil {
+		return err
+	}
+	err = p.insertEntryAt(i, sibling.entries[0])
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (bpt *BPlusTree) validate(nodes []*node) error {
@@ -195,16 +212,10 @@ func (bpt *BPlusTree) validate(nodes []*node) error {
 	return nil
 }
 
-func (bpt *BPlusTree) computeDegree() error {
-	leaf := os.Getpagesize() - nodeHeaderLen()
-	node := os.Getpagesize() - nodeHeaderLen()
+func (bpt *BPlusTree) fillDegrees() error {
 
-	leafEntrySize := (10 + 2 + 8)
-	internalEntrySize := (8 + 8 + 8)
-
-	// 4 bytes extra for the one extra child pointer
-	bpt.fanout = uint64((leaf - 4) / (2 * internalEntrySize))
-	bpt.order = uint64(node / (2 * leafEntrySize))
+	bpt.fanout = uint64((os.Getpagesize() - nodeHeaderLen() - 4) / (2 * (10 + 2 + 8)))
+	bpt.order = uint64(os.Getpagesize() - nodeHeaderLen()/(2*(8+8+8)))
 
 	if bpt.order <= 2 || bpt.fanout <= 2 {
 		return &InvalidSizeError{Got: "value lower than two for either fanout or order", Should: "need at least 3"}
