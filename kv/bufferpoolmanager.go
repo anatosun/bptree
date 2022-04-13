@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const BufferPoolCapacity = 5
+const BufferPoolCapacity = 5 //min 4
 const debug_buffer = false
 
 type BufferPoolManager struct {

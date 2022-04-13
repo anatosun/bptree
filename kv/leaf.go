@@ -1,7 +1,7 @@
 package kv
 
 import(
-	// "fmt"
+	"fmt"
 )
 
 func (n *node) isLeaf() bool {
@@ -80,6 +80,14 @@ func (n *node) search(key Key) (int, bool) {
 // Convert node to nodeID, fetch it using bpm
 func (p *node) splitLeaf(n, sibling *node, i int) error {
 
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil { 
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+
 	sibling.next = n.next
 	sibling.prev = n.id
 	n.next = sibling.id
@@ -100,4 +108,9 @@ func (p *node) splitLeaf(n, sibling *node, i int) error {
 
 	return nil
 
+}
+
+
+func dummyfmt234() {
+	fmt.Println("x")
 }

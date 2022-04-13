@@ -135,58 +135,27 @@ func (bpt *BPlusTree) Search(key Key) (*Value, error) {
 
 func (bpt *BPlusTree) Len() int { return int(bpt.meta.size) }
 
-// Convert node to nodeID, fetch it using bpm
-func (bpt *BPlusTree) search(nodeID NodeID, key Key) (childID *NodeID, at int, found bool, err error) {
+func (bpt *BPlusTree) search(nodeID NodeID, key Key) (child *NodeID, at int, found bool, err error) {
 
-
-	// fmt.Printf("searching... node=%v key=%v\n", n, key)
-
-	// Cant fetch if it's not in bufferpool. first implement allocate()
-	// nid := n.getID()
-
-	n2, err := bpt.bpm.FetchNode(nodeID)
-
+	node, err := bpt.bpm.FetchNode(nodeID)
 	if err != nil {
 		return nil, 0, false, err 
 	}
 
-	// fmt.Printf("search=%v ; found =%v\n", n, n2)
-
-	n := n2
-	nid := n.getID()
-
-	at, found = n.search(key)
-
-	if n.isLeaf() {
-		bpt.bpm.UnpinNode(nid)
-		return &nid, at, found, nil
+	at, found = node.search(key)
+	if node.isLeaf() {
+		bpt.bpm.UnpinNode(nodeID)
+		return &nodeID, at, found, nil
 	}
-
 	if found {
 		at++
 	}
 
-	// child, err = bpt.nodeRef(n.children[at]) //TODO: After no longer in use, unpin
-	child_ID := NodeID(n.children[at])
-	bpt.bpm.UnpinNode(n.getID()) //n no longer needed
-	_, err = bpt.bpm.FetchNode(child_ID)
+	childID := NodeID(node.children[at])
 
+	bpt.bpm.UnpinNode(nodeID) //passed node no longer needed
 
-	if err != nil {
-		return nil, 0, false, err //here the error happens
-	}
-
-	// unpin previous before iterating over the next
-	// err = bpt.bpm.UnpinNode(NodeID(n.id))
-	// if err != nil {
-	// 	return n, at, false, err
-	// }
-
-	//return bpt.search(child, key)
-
-	bpt.bpm.UnpinNode(child_ID)
-
-	return bpt.search(child_ID, key)
+	return bpt.search(childID, key)
 }
 
 func dummyfmt() {

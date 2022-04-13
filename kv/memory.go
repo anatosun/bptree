@@ -46,7 +46,7 @@ func (tree *BPlusTree) nodeRef(id uint64) (*node, error) {
 	return n, nil
 }
 
-func (tree *BPlusTree) allocate(n int) ([]*node, error) {
+func (tree *BPlusTree) allocate_old(n int) ([]*node, error) {
 
 	//First, let's get an free ID from this
 	pid, rem, err := findSequentialFreeSpace(tree.meta.free, n)
@@ -81,7 +81,7 @@ func (tree *BPlusTree) allocate(n int) ([]*node, error) {
 	return nodes, nil
 }
 
-func (tree *BPlusTree) allocate2() (*NodeID, error) {
+func (tree *BPlusTree) allocate() (*NodeID, error) {
 	id, err := tree.bpm.GetNewNode(tree.degree)
 	if err != nil {
 		return nil, err

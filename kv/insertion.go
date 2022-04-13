@@ -1,8 +1,6 @@
 package kv
 
 
-// Convert node to nodeID, fetch it using bpm
-
 import(
 	"fmt"
 )
@@ -11,8 +9,8 @@ func (bpt *BPlusTree) insert(e entry) (bool, error) {
 
 	if bpt.root.full() {
 
-		nodeID_1, err_allocation_1 := bpt.allocate2()
-		nodeID_2, err_allocation_2 := bpt.allocate2()
+		nodeID_1, err_allocation_1 := bpt.allocate()
+		nodeID_2, err_allocation_2 := bpt.allocate()
 
 		if err_allocation_1 != nil {
 			return false, err_allocation_1
@@ -125,7 +123,7 @@ func (bpt *BPlusTree) insertInternal(nodeID NodeID, e entry) (bool, error) {
 	}
 
 	if child.full() {
-		newNodeID, err := bpt.allocate2()
+		newNodeID, err := bpt.allocate()
 		if err != nil { return false, err }
 
 		sibling, err := bpt.bpm.FetchNode(*newNodeID)

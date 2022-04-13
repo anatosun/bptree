@@ -3,7 +3,7 @@ package kv
 import (
 	"crypto/rand"
 	"encoding/binary"
-	// "fmt"
+	"fmt"
 )
 
 const pageSize = 4 * 1024 // 4KB
@@ -27,6 +27,15 @@ func newNode(id uint64, degree uint8) *node {
 
 // Convert node to nodeID, fetch it using bpm
 func (n *node) insertChildAt(at int, child *node) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil { 
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+	
 	prior_size := len(n.children)
 	n.dirty = true
 	n.children = append(n.children[0:at], append([]uint64{child.id}, n.children[at:]...)...)
@@ -51,6 +60,14 @@ func (n *node) full() bool {
 // dumb implementation of http://eecs.csuohio.edu/~sschung/cis611/B+Trees.pdf
 // Convert node to nodeID, fetch it using bpm
 func (p *node) splitNode(n, sibling *node, i int) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil { 
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
 
 	parentKey := n.entries[p.degree-1]
 
@@ -78,6 +95,15 @@ func (p *node) splitNode(n, sibling *node, i int) error {
 
 // Convert node to nodeID, fetch it using bpm
 func (p *node) split(n, sibling *node, i int) error {
+
+	// FX
+	// Pass nodeID and siblingID and fetch it like this:
+	// n, err := bpt.bpm.FetchNode(nodeID)
+	// if err != nil { 
+	// 	bpt.bpm.UnpinNode(nodeID)
+	// 	return false, err
+	// }
+
 	p.dirty = true
 	n.dirty = true
 	sibling.dirty = true
@@ -167,4 +193,9 @@ func (n *node) UnmarshalBinary(data []byte) error {
 	}
 
 	return nil
+}
+
+
+func dummyfmt23() {
+	fmt.Println("x")
 }
