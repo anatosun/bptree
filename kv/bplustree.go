@@ -18,7 +18,7 @@ type BPlusTree struct {
 const preaollocation = 1000 * 1000
 
 // returns a new B+ tree with the optimal parameters
-func New() *BPlusTree {
+func New() storage {
 
 	clock := NewClockPolicy(BufferPoolCapacity)
 	disk := NewDiskManager()
