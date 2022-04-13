@@ -98,10 +98,10 @@ func NewDiskManager() *DiskManager {
 //Print nodes
 //Depracted
 func (d *DiskManager) PrintNodes() {
-	fmt.Println("Depracted")
-	// fmt.Println("------------------------------------")
-	// fmt.Println("Nodes on disk:")
-	// for _, node := range d.nodes {
-	// 	fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
-	// }
+	//	fmt.Println("Depracted")
+	fmt.Println("------------------------------------")
+	fmt.Println("Nodes on disk:")
+	for _, node := range d.nodes {
+		fmt.Printf("node id=%d, dirtybit=%t, counter=%d, content=not implemented\n", node.getID(), node.IsDirty(), node.getPinCounter())
+	}
 }
